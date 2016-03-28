@@ -1,91 +1,79 @@
-Flask SQLAlchemy JSONAPI
-===
-
+## Flask SQLAlchemy JSONAPI
 A JSONAPI URL parameter handling library.
 
-### Usage
-
-**Filtering:**
-
-For a given set of query parameters, pass a parameters dictionary object and the marshmallow schema to the `FilterParameter`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
+**Filtering collections.**
 
 ```python
-parameters = {
-    "filter[id]": "1,2,10",
-    "q": "xyz",
-    "sort": "-id"
-}
-filters, errors = FilterParameter.generate(schema, parameters)
+from flask import request
+
+
+def filter(query, schema):
+    """Extract all `filter[]` key, value pairs and filter them."""
+    filters, err = FilterParameter.generate(schema, request.args)
+    if err:
+        self.errors.extend(err)
+    return FilterParameter.filter_by(query, filters)
 ```
 
-Apply the returned filteres by calling the `FilterParameter`'s `filter_by` staticmethod.
-
-query = FilterParameter.filter_by(query, filters)
-
-**Sorting:**
-
-Retrieve the values from the `sort` parameter and parse it into a list.
+**Sorting collections.**
 
 ```python
-values = request.args.get('sort').split(',')
+from flask import request
+
+
+def sort(query, schema):
+    """Get the value of the sort parameter, generate some SortValue
+    instances and return a sorted query.
+    """
+    fields = request.args.get('sort')
+    if not fields:
+        return query
+
+    sorts, err = SortValue.generate(schema, fields.split(','))
+    if err:
+        raise Exception(err)
+    return SortValue.sort_by(query, sorts)
 ```
 
-Pass both the values and the marshmallow schema to the `SortValue`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
+**Including resources.**
 
 ```python
-sorts, errors = SortValue.generate(schema, values)
+from flask import request
+
+
+def include(model, schema):
+    """Get the value of the include parameter and include related
+    resources.
+    """
+    fields = request.args.get('include')
+    if not fields:
+        return []
+
+    includes, errors = IncludeValue.generate(schema, fields.split(','))
+    if errors:
+        raise Exception(errors)
+    return IncludeValue.include(includes, model)
 ```
 
-Apply the returned sorts by calling the `SortValue`'s `sort_by` staticmethod.
+#### Documentation
 
-```python
-query = SortValue.sort_by(query, sorts)
-```
+Link to docs when they're up.
 
-**Including:**
+#### Installation
 
-Query the database and return a model.
+`pip install git+git://github.com/caxiam/model-api.git`
 
-```python
-model = Product.query.first()
-```
+#### Requirements
+Tested with Python 2.7.
 
-Retrieve the values from the `include` parameter and parse it into a list.
+Requires:
+* Flask
+* Marshmallow
+* Marshmallow-JSONAPI
+* SQLAlchemy
 
-```python
-values = request.args.get('include').split(',')
-```
-
-Pass both the values and the marshmallow schema to the `IncludeValue`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
-
-```python
-includes, errors = IncludeValue.generate(schema, values)
-```
-
-Apply the returned includes by calling the `IncludeValue`'s `include` staticmethod.
-
-```python
-serialized_result = self.include(includes, model)
-```
-
-Append the result to your the JSON object you intend to return.
-
-```python
-result['included'] = serialized_result
-return result
-```
-
-### Testing
-
-1. Clone this repository.
-    `git clone repo`
-2. Install the developer requirements.
-    `pip install -r requirements.txt`
-3. Run the tests with nose.
-    `nosetests -w tests/unit`
-
-### Links
+#### Links
 http://jsonapi.org/
 
-### License
-See the license file for more information.
+#### License
+MIT
