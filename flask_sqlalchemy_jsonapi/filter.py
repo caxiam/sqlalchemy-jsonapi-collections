@@ -151,11 +151,6 @@ class FilterParameter(object):
         The `parameters` dictionary's values must be comma-seperated
         string lists.  E.g. `1,2` or `1`
 
-        A FilterParameter generator method. This method takes a
-        dictionary of parameter, value pairs, finds all the fields
-        wrapped in `filter[]`, and filters the field by the given
-        values.
-
         :param schema: `marshmallow` schema object.
         :param parameters: A dictionary of column names and filters.
         """
