@@ -8,7 +8,8 @@ Usage
 
 **Filtering collections.**
 
-:: python
+
+.. code-block:: python
 
     from flask import request
 
@@ -22,7 +23,8 @@ Usage
 
 **Sorting collections.**
 
-:: python
+
+.. code-block:: python
 
     from flask import request
 
@@ -42,7 +44,8 @@ Usage
 
 **Including resources.**
 
-:: python
+
+.. code-block:: python
 
     from flask import request
 
