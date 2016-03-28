@@ -8,7 +8,7 @@ Usage
 
 **Filtering collections.**
 
-::
+:: python
 
     from flask import request
 
@@ -22,7 +22,7 @@ Usage
 
 **Sorting collections.**
 
-::
+:: python
 
     from flask import request
 
@@ -42,7 +42,7 @@ Usage
 
 **Including resources.**
 
-::
+:: python
 
     from flask import request
 
@@ -70,14 +70,15 @@ Link to docs when they're up.
 Installation
 ============
 
-`pip install git+git://github.com/caxiam/model-api.git`
+`pip install git+git://github.com/caxiam/sqlalchemy-jsonapi-collections.git`
 
 ============
 Requirements
 ============
 Tested with Python 2.7.
 
-Requires:
+**Requires:**
+
 * Flask
 * Marshmallow
 * Marshmallow-JSONAPI
