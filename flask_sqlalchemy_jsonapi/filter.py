@@ -9,18 +9,18 @@ import re
 
 
 class FilterParameter(object):
+    """Validate and filter a provided `marshmallow` schema field name."""
 
-    """The FilterParameter object is responsible for generating a
-    filter for exactly one query parameter, value pair.
-
-    :param field: A string reference to a marshmallow schema field.
-    :param values: A string-list of values delineated by a comma.
-    :param schema: A marshmallow schema object.
-    """
     column = None
     relationship = None
 
     def __init__(self, field, schema, values):
+        """Validate the provided column and filters.
+
+        :param field: String path to a schema attribute.
+        :param values: String list of `OR` values.
+        :param schema: `marshmallow` schema object.
+        """
         self.schema = schema
 
         if "." in field:
@@ -39,7 +39,7 @@ class FilterParameter(object):
             column_name = self.field.attribute or field
             self.column = getattr(schema.Meta.model, column_name)
 
-        self.values, errors = self.prepare_values(values.lower().split(','))
+        self.values, errors = self._prepare_values(values.lower().split(','))
         if errors:
             raise FieldError(errors)
 
@@ -50,23 +50,27 @@ class FilterParameter(object):
 
     @property
     def column_type(self):
+        """Extract a column's type."""
         return self.column.property.columns[0].type.python_type
 
     @property
     def enum_choices(self):
+        """Return a set of choices."""
         if self.is_enum:
             return self.column.property.columns[0].type.enums
         return None
 
     @property
     def is_enum(self):
+        """Determine if a column is an enumeration."""
         if hasattr(self.column.property.columns[0].type, 'enums'):
             return True
         return False
 
     @property
     def filter(self):
-        filters = self.prepare_strategies(self.values)
+        """Generate a `SQLAlchemy` filter."""
+        filters = self._prepare_strategies(self.values)
 
         if self.relationship is None:
             if self.many:
@@ -87,12 +91,7 @@ class FilterParameter(object):
             raise FieldError('Invalid field specified: {}.'.format(field))
         return schema._declared_fields[field]
 
-    def prepare_values(self, values):
-        """For a given set of values, cast each value according to the
-        column being filtered's type.
-
-        :param values: A list of string values to cast.
-        """
+    def _prepare_values(self, values):
         errors = []
         for index, value in enumerate(values):
             try:
@@ -118,12 +117,7 @@ class FilterParameter(object):
             return Decimal(value)
         return str(value)
 
-    def prepare_strategies(self, values):
-        """Takes a list of values and applies a query filter based on
-        the column being filtered's type.
-
-        :param values: A list of type appropriate values to sort by.
-        """
+    def _prepare_strategies(self, values):
         filters = []
         for value in values:
             filters.append(self._prepare_strategy(value))
@@ -148,13 +142,22 @@ class FilterParameter(object):
 
     @classmethod
     def generate(cls, schema, parameters):
-        """A FilterParameter generator method. This method takes a
+        """Parse a dictionary into `FilterParameter` instances.
+
+        The `parameters` dictionary's keys must be attributes of the
+        provided schema.  The attribute name must start with `filter[`
+        and end with `]` to be evaluated.
+
+        The `parameters` dictionary's values must be comma-seperated
+        string lists.  E.g. `1,2` or `1`
+
+        A FilterParameter generator method. This method takes a
         dictionary of parameter, value pairs, finds all the fields
         wrapped in `filter[]`, and filters the field by the given
         values.
 
-        :param schema: A marshmallow schema object.
-        :param parameters: A dictionary of parameter, value pairs.
+        :param schema: `marshmallow` schema object.
+        :param parameters: A dictionary of column names and filters.
         """
         errors = []
         filters = []
@@ -170,11 +173,10 @@ class FilterParameter(object):
 
     @staticmethod
     def filter_by(query, values):
-        """A filtering helper function that applies a set of objects
-        filter parameters to a given query object.
+        """Apply a series of `FilterParameter` instances as query filters.
 
-        :param query: A SQLAlchemy query object.
-        :param values: A list of FilterParameter instances.
+        :param query: `SQLAlchemy` query object.
+        :param values: List of `FilterParameter` instances.
         """
         for value in values:
             query = query.filter(value.filter)

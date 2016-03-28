@@ -4,21 +4,24 @@ from flask_sqlalchemy_jsonapi.errors import FieldError
 
 
 class SortValue(object):
+    """Validate and sort a provided `marshmallow` schema field name."""
 
-    """The SortValue object is responsible for formatting a field value
-    as a valid, sorted query expression.
-
-    :param schema: A marshmallow schema object.
-    :param value: A string value that represents a path to a field.
-        Values can be specified with a `.` which will represent
-        a logical break between the relationship field and its related
-        schema's attribute.
-    """
     attribute = None
     descending = False
     join = None
 
     def __init__(self, schema, value):
+        """Set the `SQLAlchemy` column name from the provided attribute.
+
+        Dot seperated strings are understood to be the attributes of a
+        related schema.  If the preceding name does not match a valid
+        relationship field an error will be thrown.  If the proceeding
+        name does not match an attribute on the related schema an error
+        will be thrown.
+
+        :param schema: `marshmallow` schema object.
+        :param value: String path to sorted schema attribute.
+        """
         self.schema = schema
         self.value = value
 
@@ -40,17 +43,17 @@ class SortValue(object):
 
     @property
     def column(self):
+        """A sorted `SQLAlchemy` column reference."""
         column = getattr(self.schema.Meta.model, self.attribute)
         if self.descending:
             return desc(column)
         return column
 
     def _get_field(self, field, schema):
-        """Ensure the field exists within the declared fields
-        dictionary or err.
+        """Get the schema field associated with the specified name.
 
-        :param field: A string that represents a declared field.
-        :param schema: A marshmallow schema object.
+        :param field: String name of a declared attribute.
+        :param schema: `marshmallow` schema object.
         """
         if field not in schema._declared_fields:
             raise FieldError(
@@ -59,14 +62,16 @@ class SortValue(object):
 
     @classmethod
     def generate(cls, schema, values):
-        """A SortValue generator method. This method takes a given set
-        of strings and converts them into SortValue objects. If the
-        string can not be converted, an error is marshaled as a member
-        of a string list.
+        """Parse a series of strings into `SortValue` instances.
 
-        :param schema: A marshmallow schema object.
-        :param values: A list of strings that represent field names on
-                       the provided schema.
+        Dot notation can be used to sort by the attributes of a related
+        schema.  E.g. `relationship.attribute`.
+
+        If the string can not be converted, an error is marshaled as a
+        member of a string list.
+
+        :param schema: `marshmallow` schema reference.
+        :param values: String list of attributes.
         """
         errors = []
         fields = []
@@ -79,11 +84,13 @@ class SortValue(object):
 
     @staticmethod
     def sort_by(query, values):
-        """A sorting helper function that joins the appropriate tables and
-        implements column sorting through the preferred approach.
+        """Apply a series of `SortValue` instances to a `SQLAlchemy` query.
 
-        :param query: A SQLAlchemy query object.
-        :param values: A list of SortValue instances.
+        Dot seperated sorts will have the appropriate tables joined
+        prior to applying the sort.
+
+        :param query: `SQLAlchemy` query object.
+        :param values: List of `SortValue` instances.
         """
         sorts = []
         for value in values:

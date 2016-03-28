@@ -4,22 +4,23 @@ from flask_sqlalchemy_jsonapi.errors import FieldError
 
 
 class IncludeValue(object):
+    """Validate and include a given relationship field.
 
-    """The IncludeValue object is responsible for validating the
+    The `IncludeValue` object is responsible for validating the
     provided fields and including a properly serialized data response
     based on the relationships present on the primary resource.
-
-    :param schema: A marshmallow schema object.
-    :param value: A string value representing a relationship field on
-        the provided marshmallow schema.
-    :param id_field: A string representation of a SQLAlchemy model
-        column primary key.
     """
 
     error = 'Invalid relationship specified: {}.'
     id_field = 'id'
 
     def __init__(self, schema, value, id_field='id'):
+        """Validate the inputs.
+
+        :param schema: Marshmallow schema reference.
+        :param value: String name of a relationship field.
+        :param id_field: Optionally specified `ID` field to query.
+        """
         field = schema._declared_fields.get(value)
         if value is None:
             raise FieldError(self.error.format(value))
@@ -34,9 +35,9 @@ class IncludeValue(object):
         self.id_field = id_field
 
     def __call__(self, model):
-        """Returns a set of serialized relationship model instances.
+        """Dump an `IncludeValue` instance to a dictionary.
 
-        :param model: A SQLAlchemy model instance.
+        :param model: `SQLAlchemy` model instance.
         """
         values = getattr(model, self.attribute)
         if not isinstance(values, list):
@@ -58,6 +59,11 @@ class IncludeValue(object):
 
     @classmethod
     def generate(cls, schema, values):
+        """Parse a series of strings into `IncludeValue` instances.
+
+        :param schema: Marshmallow schema reference.
+        :param values: String list of relationship fields to include.
+        """
         errors = []
         includes = []
         for value in values:
@@ -69,11 +75,10 @@ class IncludeValue(object):
 
     @staticmethod
     def include(includes, model):
-        """An including helper function that constructs the proper
-        include response.
+        """Dump a series of `IncludeValue` instances to a dictionary.
 
-        :param includes: A list of IncludeValue instances.
-        :param model: A SQLAlchemy model instance.
+        :param includes: List of `IncludeValue` instances.
+        :param model: `SQLAlchemy` model instance.
         """
         included = []
         for include in includes:
