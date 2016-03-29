@@ -1,5 +1,8 @@
 sqlalchemy-jsonapi-collections
 ==============================
+.. image:: https://readthedocs.org/projects/sqlalchemy-jsonapi-collections/badge/?version=latest
+    :target: http://sqlalchemy-jsonapi-collections.readthedocs.org/en/latest/?badge=latest
+    :alt: Documentation Status
 A JSONAPI URL parameter handling library.
 
 =====
@@ -73,7 +76,9 @@ For more information visit: http://sqlalchemy-jsonapi-collections.readthedocs.or
 Installation
 ============
 
-`pip install git+git://github.com/caxiam/sqlalchemy-jsonapi-collections.git`
+::
+
+    pip install git+git://github.com/caxiam/sqlalchemy-jsonapi-collections.git
 
 ============
 Requirements
