@@ -67,7 +67,7 @@ Usage
 Documentation
 =============
 
-Link to docs when they're up.
+For more information visit: http://sqlalchemy-jsonapi-collections.readthedocs.org/en/latest/
 
 ============
 Installation
