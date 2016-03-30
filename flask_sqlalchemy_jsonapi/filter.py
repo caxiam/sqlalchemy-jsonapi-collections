@@ -87,11 +87,20 @@ class FilterParameter(object):
         return wrapper(*filters)
 
     def _get_field(self, field, schema):
+        """Return schema field reference.
+
+        :param field: String field name.
+        :param schema: `marshmallow` schema reference.
+        """
         if field not in schema._declared_fields:
             raise FieldError('Invalid field specified: {}.'.format(field))
         return schema._declared_fields[field]
 
     def _prepare_values(self, values):
+        """Parse a given set of string values to their appropriate type.
+
+        :param values: List of string filters.
+        """
         errors = []
         for index, value in enumerate(values):
             try:
@@ -100,7 +109,11 @@ class FilterParameter(object):
                 errors.append('Invalid value specified: {}.'.format(value))
         return values, errors
 
-    def _prepare_value(self, value):
+     def _prepare_value(self, value):
+        """Parse a given string value to it's appropriate type.
+
+        :param value: String filter value.
+        """
         if value == '':
             return None
 
@@ -118,12 +131,20 @@ class FilterParameter(object):
         return str(value)
 
     def _prepare_strategies(self, values):
+        """Parse a list of typed values into `SQLAlchemy` filters.
+
+        :param values: List of typed values.
+        """
         filters = []
         for value in values:
             filters.append(self._prepare_strategy(value))
         return filters
 
     def _prepare_strategy(self, value):
+        """Parse a typed value into a `SQLAlchemy` filter.
+
+        :param value: Typed value.
+        """
         if self.is_enum or value is None:
             return self.column == value
 

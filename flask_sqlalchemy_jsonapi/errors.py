@@ -2,4 +2,6 @@
 
 
 class FieldError(Exception):
+    """Missing field error."""
+
     pass
