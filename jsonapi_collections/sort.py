@@ -4,64 +4,41 @@ from jsonapi_collections.errors import FieldError
 
 
 class SortValue(object):
-    """Validate and sort a provided `marshmallow` schema field name."""
+    """."""
 
-    attribute = None
-    descending = False
-    join = None
+    def __init__(self, driver, field_name):
+        """Set a join and a sort reference.
 
-    def __init__(self, schema, value):
-        """Set the `SQLAlchemy` column name from the provided attribute.
-
-        Dot seperated strings are understood to be the attributes of a
-        related schema.  If the preceding name does not match a valid
-        relationship field an error will be thrown.  If the proceeding
-        name does not match an attribute on the related schema an error
-        will be thrown.
-
-        :param schema: `marshmallow` schema object.
-        :param value: String path to sorted schema attribute.
+        :param driver: `jsonapi_collections` driver instance.
+        :param field_name: A string representation of a schema field.
         """
-        self.schema = schema
-        self.value = value
+        self.driver = driver
+        self.field = field_name
 
-        self.descending = value.startswith('-')
-        if self.descending:
+        descending = value.startswith('-')
+        if descending:
             value = value[1:]
 
         if "." in value:
-            table, column = value.split('.', 1)
+            relationship_name, attribute_name = value.split('.')
 
-            relationship = self._get_field(table, schema)
-            field = self._get_field(column, relationship.schema)
+            relationship = self.driver.get_field(relationship_name)
+            related_schema = self.driver.get_related_schema(relationship)
 
-            self.attribute = field.attribute or column
-            self.join = table
+            field = getattr(attribute_name, related_schema)
+            self.join = relationship_name
         else:
-            field = self._get_field(value, schema)
-            self.attribute = field.attribute or value
+            field = self.driver.get_field(value)
+            self.join = None
 
-    @property
-    def column(self):
-        """A sorted `SQLAlchemy` column reference."""
-        column = getattr(self.schema.Meta.model, self.attribute)
-        if self.descending:
-            return desc(column)
-        return column
-
-    def _get_field(self, field, schema):
-        """Get the schema field associated with the specified name.
-
-        :param field: String name of a declared attribute.
-        :param schema: `marshmallow` schema object.
-        """
-        if field not in schema._declared_fields:
-            raise FieldError(
-                'Invalid field specified: {}.'.format(self.value))
-        return schema._declared_fields[field]
+        column = self.driver.get_column(field)
+        if descending:
+            self.sort = desc(column)
+        else:
+            self.sort = column
 
     @classmethod
-    def generate(cls, schema, values):
+    def generate(cls, driver, values):
         """Parse a series of strings into `SortValue` instances.
 
         Dot notation can be used to sort by the attributes of a related
@@ -70,7 +47,7 @@ class SortValue(object):
         If the string can not be converted, an error is marshaled as a
         member of a string list.
 
-        :param schema: `marshmallow` schema reference.
+        :param driver: `jsonapi_collections` driver reference.
         :param values: String list of attributes.
         """
         errors = []
@@ -96,5 +73,5 @@ class SortValue(object):
         for value in values:
             if value.join is not None:
                 query = query.join(value.join)
-            sorts.append(value.column)
+            sorts.append(value.sort)
         return query.order_by(*sorts)
