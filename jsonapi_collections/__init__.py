@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from jsonapi_collections.drivers import marshmallow, sqlalchemy
 from jsonapi_collections.filter import FilterParameter
 from jsonapi_collections.sort import SortValue
 
@@ -6,47 +7,42 @@ from jsonapi_collections.sort import SortValue
 class Collection(object):
     """JSONAPI resource collection handler."""
 
-    def __init__(self, model, parameters, view=None):
+    def __init__(self, model, parameters, schema=None):
         """Initialize the collection controller.
 
         :param model: SQLAlchemy model class.
         :param parameters: Dictionary of parameter, value pairs.
-        :param view: Schema to validate against.
-            If `None`, the filter key, value pairs will be validated
-            against the model.
+        :param schema: Schema to validate against.
+            If `None`, the key, value pairs will be validated against
+            the model.
         """
         self.model = model
         self.parameters = self._handle_parameters(parameters)
+        self.schema = schema
 
-        if self.view is None:
-            self.view = model
+        if schema is not None:
+            self.driver = sqlalchemy.SQLAlchemyDriver(self)
         else:
-            self.view = view
+            self.driver = marshmallow.MarshmallowDriver(self)
 
     def get_filters(self):
         """Return a list of filters."""
-        filters, errors = FilterParameter.generate(self.view, self.parameters)
+        field_names = self.parameters.get('filters', {})
+        filters, errors = FilterParameter.generate(self.driver, field_names)
         if errors:
             raise Exception(errors)
         return filters
 
     def get_sorts(self):
         """Return a list of sorts."""
-        fields = self.parameters.get('sort', '')
-        if fields == '':
-            return []
-
-        sorts, errors = SortValue.generate(self.view, fields.split(','))
+        field_names = self.parameters.get('sort', [])
+        sorts, errors = SortValue.generate(self.driver, field_names)
         if errors:
             raise Exception(errors)
         return sorts
 
-    def _validate_fields(self):
-        """Validate the provided fields."""
-        pass
-
     def _handle_parameters(self, parameters):
-        """."""
+        """Return a formatted JSONAPI parameters object."""
         return {
             'sort': self._get_sorted_fields(parameters),
             'filters': self._get_filtered_fields(parameters)
