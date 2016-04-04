@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import desc
-from flask_sqlalchemy_jsonapi.errors import FieldError
+from jsonapi_collections.errors import FieldError
 
 
 class SortValue(object):

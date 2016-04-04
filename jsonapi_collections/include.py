@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from marshmallow_jsonapi.fields import BaseRelationship
-from flask_sqlalchemy_jsonapi.errors import FieldError
+from jsonapi_collections.errors import FieldError
 
 
 class IncludeValue(object):
