@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import date, timedelta
 
-from flask_sqlalchemy_jsonapi import FilterParameter
+from jsonapi_collections import FilterParameter
 from tests import UnitTestCase
 from tests.mock import CompanyModel, EmployeeModel, PersonModel, PersonSchema
 

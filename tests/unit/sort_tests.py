@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask_sqlalchemy_jsonapi import SortValue
+from jsonapi_collections import SortValue
 from tests import UnitTestCase
 from tests.mock import CompanyModel, PersonModel, PersonSchema
 

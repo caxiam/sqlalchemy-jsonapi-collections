@@ -4,29 +4,29 @@
 API Reference
 *************
 
-.. module:: flask_sqlalchemy_jsonapi
+.. module:: jsonapi_collections
 
 Filter
 ======
 
-.. autoclass:: flask_sqlalchemy_jsonapi.FilterParameter
+.. autoclass:: jsonapi_collections.FilterParameter
     :inherited-members:
 
 Sort
 ====
 
-.. autoclass:: flask_sqlalchemy_jsonapi.SortValue
+.. autoclass:: jsonapi_collections.SortValue
     :inherited-members:
 
 Include
 =======
 
-.. autoclass:: flask_sqlalchemy_jsonapi.IncludeValue
+.. autoclass:: jsonapi_collections.IncludeValue
     :inherited-members:
 
 Errors
 ======
 
-.. automodule:: flask_sqlalchemy_jsonapi.errors
+.. automodule:: jsonapi_collections.errors
     :members:
     :private-members:

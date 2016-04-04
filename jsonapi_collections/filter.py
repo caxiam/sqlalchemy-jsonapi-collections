@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import and_, or_
-from flask_sqlalchemy_jsonapi.errors import FieldError
+from jsonapi_collections.errors import FieldError
 
 import re
 
