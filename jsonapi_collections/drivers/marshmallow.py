@@ -7,7 +7,7 @@ class MarshmallowDriver(BaseDriver):
 
     def get_column(self, field):
         """Return a column instance."""
-        column_name = getattr(self.get_field(field), 'attribute', None)
+        column_name = getattr(field, 'attribute', None)
         if column_name is not None:
             field = column_name
         return getattr(self.collection.model, field)
@@ -15,6 +15,10 @@ class MarshmallowDriver(BaseDriver):
     def get_field(self, field_name):
         """Return a marshmallow field instance."""
         return getattr(self.collection.schema, field_name, None)
+        
+    def get_related_schema(self, field):
+        """Retrieve a related schema from the provided field."""
+        return getattr(field, 'schema')
 
     def deserialize(self, field, values):
         """Deserialize a given set of values into their python types."""

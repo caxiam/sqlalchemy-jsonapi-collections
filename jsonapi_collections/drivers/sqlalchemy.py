@@ -24,14 +24,19 @@ class SQLAlchemyDriver(BaseDriver):
         :param field: A string reference to a column's name.
         """
         return getattr(self.collection.model, field, None)
+        
+    def get_related_schema(self, field):
+        """Retrieve a related model from the provided field."""
+        raise Exception(dir(field))
 
     def deserialize(self, field, values):
-        """Deserialize a given set of values into their python types."""
+        """Deserialize a set of values."""
         if isinstance(field, str):
             field = self.get_column(field)
         return [self._deserialize(field, value) for value in values]
 
     def _deserialize(self, column, value):
+        """Deserialize a value into its Python type."""
         if self.is_enum(column) and value not in self._enum_choices(column):
             raise ValueError
 

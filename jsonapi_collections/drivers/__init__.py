@@ -2,7 +2,7 @@
 
 
 class BaseDriver(object):
-    """Extensible driver template object."""
+    """Extensible driver template for interacting with SQLAlchemy."""
 
     def __init__(self, collection):
         """DO NOT OVERRIDE.
@@ -33,6 +33,10 @@ class BaseDriver(object):
         
         :param field_name: A string reference to a schema's field name.
         """
+        raise NotImplementedError
+
+    def get_related_schema(self, field):
+        """Retrieve a related schema from the provided field."""
         raise NotImplementedError
 
     def deserialize(self, column, values):
