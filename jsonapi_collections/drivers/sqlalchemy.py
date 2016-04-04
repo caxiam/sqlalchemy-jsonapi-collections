@@ -8,26 +8,30 @@ from jsonapi_collections.drivers import BaseDriver
 class SQLAlchemyDriver(BaseDriver):
     """SQLAlchemy bindings."""
 
-    def get_column(self, field):
+    def get_column(self, field, model=None):
         """Return the provided field.
 
         We return the field because it is already a SQLAlchemy column
         instance.
 
         :param field: A `SQLAlchemy` column instance.
+        :param model: Unused for this driver.
         """
         return field
 
-    def get_field(self, field_name):
+    def get_column_name(self, field_name, schema=None):
+        """Return a string reference to a model column."""
+        return field_name
+
+    def get_field(self, field_name, schema=None):
         """Return a SQLAlchemy column instance.
-        
+
         :param field: A string reference to a column's name.
         """
-        return getattr(self.collection.model, field, None)
-        
+        return getattr(schema or self.collection.model, field, None)
+
     def get_related_schema(self, field):
-        """Retrieve a related model from the provided field."""
-        raise Exception(dir(field))
+        return self.get_column_model(field)
 
     def deserialize(self, field, values):
         """Deserialize a set of values."""
