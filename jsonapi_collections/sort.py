@@ -12,9 +12,6 @@ class SortValue(object):
         :param driver: `jsonapi_collections` driver instance.
         :param field_name: A string representation of a schema field.
         """
-        self.driver = driver
-        self.field = field_name
-
         descending = value.startswith('-')
         if descending:
             value = value[1:]
@@ -22,23 +19,23 @@ class SortValue(object):
         if "." in value:
             relationship_name, attribute_name = value.split('.')
 
-            relationship = self.driver.get_field(relationship_name)
-            related_schema = self.driver.get_related_schema(relationship)
+            relationship = driver.get_field(relationship_name)
+            related_schema = driver.get_related_schema(relationship)
 
             field = getattr(attribute_name, related_schema)
             self.join = relationship_name
         else:
-            field = self.driver.get_field(value)
+            field = driver.get_field(value)
             self.join = None
 
-        column = self.driver.get_column(field)
+        column = driver.get_column(field)
         if descending:
             self.sort = desc(column)
         else:
             self.sort = column
 
     @classmethod
-    def generate(cls, driver, values):
+    def generate(cls, driver, field_names):
         """Parse a series of strings into `SortValue` instances.
 
         Dot notation can be used to sort by the attributes of a related
@@ -48,13 +45,13 @@ class SortValue(object):
         member of a string list.
 
         :param driver: `jsonapi_collections` driver reference.
-        :param values: String list of attributes.
+        :param field_names: String list of attributes.
         """
         errors = []
         fields = []
-        for value in values:
+        for field_name in field_names:
             try:
-                fields.append(cls(schema, value))
+                fields.append(cls(schema, field_name))
             except FieldError as error:
                 errors.append(error.message)
         return fields, errors
