@@ -4,7 +4,7 @@ from jsonapi_collections.errors import FieldError
 
 
 class SortValue(object):
-    """."""
+    """Formulate a query sort."""
 
     def __init__(self, driver, field_name):
         """Set a join and a sort reference.
