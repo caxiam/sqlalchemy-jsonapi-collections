@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from sqlalchemy import and_, or_
 
@@ -18,21 +18,30 @@ class FilterParameter(object):
         self.driver = driver
         self.many = len(values) > 1
 
-        if "." in value:
-            relationship_name, field_name = value.split('.')
+        if "." in field_name:
+            relationship_name, field_name = field_name.split('.')
+
+            relationship_column_name = self.driver.get_column_name(
+                relationship_name)
+            self.relationship = self.driver.get_column(
+                relationship_column_name)
 
             relationship_field = self.driver.get_field(relationship_name)
-            self.relationship = self.driver.get_column(relationship_field)
+            related_schema = self.driver.get_related_schema(relationship_field)
+            field = self.driver.get_field(field_name, related_schema)
 
             model = self.driver.get_column_model(self.relationship)
-            column_name = self.driver.get_column_name(field_name, model)
-            self.column = getattr(model, column_name)
+            column_name = self.driver.get_column_name(
+                field_name, related_schema)
+            self.column = self.driver.get_column(column_name, model)
         else:
             field = self.driver.get_field(field_name)
-            self.column = self.driver.get_column(field)
+
+            column_name = self.driver.get_column_name(field_name)
+            self.column = self.driver.get_column(column_name)
             self.relationship = None
 
-       self.values = self.driver.deserialize(field, values)
+        self.values = self.driver.deserialize(field, values)
 
     def __call__(self):
         """Generate a `SQLAlchemy` filter."""
@@ -64,7 +73,7 @@ class FilterParameter(object):
         return filters
 
     def _prepare_strategy(self, value):
-        if self.is_enum(self.column) or value is None:
+        if self.driver.is_enum(self.column) or value is None:
             return self.column == value
 
         if self.column_type == str:
@@ -74,9 +83,6 @@ class FilterParameter(object):
         elif self.column_type == datetime:
             tomorrow = value + timedelta(days=1)
             return and_(self.column >= value, self.column < tomorrow)
-        elif self.column_type == Decimal and value.as_tuple().exponent == 0:
-            base = int(value)
-            return and_(self.column >= base, self.column < base + 1)
         return self.column == value
 
     @classmethod

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import desc
-from jsonapi_collections.errors import FieldError
 
 
 class SortValue(object):
@@ -12,12 +11,12 @@ class SortValue(object):
         :param driver: `jsonapi_collections` driver instance.
         :param field_name: A string representation of a schema field.
         """
-        descending = value.startswith('-')
+        descending = field_name.startswith('-')
         if descending:
-            value = value[1:]
+            field_name = field_name[1:]
 
-        if "." in value:
-            relationship_name, attribute_name = value.split('.')
+        if "." in field_name:
+            relationship_name, attribute_name = field_name.split('.')
 
             relationship = driver.get_field(relationship_name)
             related_schema = driver.get_related_schema(relationship)
@@ -25,7 +24,7 @@ class SortValue(object):
             field = getattr(attribute_name, related_schema)
             self.join = relationship_name
         else:
-            field = driver.get_field(value)
+            field = driver.get_field(field_name)
             self.join = None
 
         column = driver.get_column(field)
