@@ -47,14 +47,10 @@ class SortValue(object):
         :param driver: `jsonapi_collections` driver reference.
         :param field_names: String list of attributes.
         """
-        errors = []
-        fields = []
+        sorts = []
         for field_name in field_names:
-            try:
-                fields.append(cls(schema, field_name))
-            except FieldError as error:
-                errors.append(error.message)
-        return fields, errors
+            sorts.append(cls(driver, field_name))
+        return sorts
 
     @staticmethod
     def sort_by(query, values):

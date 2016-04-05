@@ -27,17 +27,13 @@ class Collection(object):
     def filter_query(self, query):
         """Permutate `SQLAlchemy` query with filtering."""
         field_names = self.parameters.get('filters', {})
-        filters, errors = FilterParameter.generate(self.driver, field_names)
-        if errors:
-            raise Exception(errors)
+        filters = FilterParameter.generate(self.driver, field_names)
         return FilterParameter.filter_by(query, filters)
 
     def sort_query(self):
         """Permutate `SQLAlchemy` query with sorting."""
         field_names = self.parameters.get('sort', [])
-        sorts, errors = SortValue.generate(self.driver, field_names)
-        if errors:
-            raise Exception(errors)
+        sorts = SortValue.generate(self.driver, field_names)
         return SortValue.sort_by(query, sorts)
 
     def _handle_parameters(self, parameters):
