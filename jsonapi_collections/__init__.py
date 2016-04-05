@@ -24,21 +24,21 @@ class Collection(object):
         driver = driver or SQLAlchemyDriver
         self.driver = driver(self)
 
-    def get_filters(self):
-        """Return a list of filters."""
+    def filter_query(self, query):
+        """Permutate `SQLAlchemy` query with filtering."""
         field_names = self.parameters.get('filters', {})
         filters, errors = FilterParameter.generate(self.driver, field_names)
         if errors:
             raise Exception(errors)
-        return filters
+        return FilterParameter.filter_by(query, filters)
 
-    def get_sorts(self):
-        """Return a list of sorts."""
+    def sort_query(self):
+        """Permutate `SQLAlchemy` query with sorting."""
         field_names = self.parameters.get('sort', [])
         sorts, errors = SortValue.generate(self.driver, field_names)
         if errors:
             raise Exception(errors)
-        return sorts
+        return SortValue.sort_by(query, sorts)
 
     def _handle_parameters(self, parameters):
         """Return a formatted JSONAPI parameters object."""
