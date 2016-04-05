@@ -30,7 +30,7 @@ class Collection(object):
         filters = FilterParameter.generate(self.driver, field_names)
         return FilterParameter.filter_by(query, filters)
 
-    def sort_query(self):
+    def sort_query(self, query):
         """Permutate `SQLAlchemy` query with sorting."""
         field_names = self.parameters.get('sort', [])
         sorts = SortValue.generate(self.driver, field_names)
