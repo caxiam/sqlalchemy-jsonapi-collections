@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from jsonapi_collections.drivers import marshmallow, sqlalchemy
+from jsonapi_collections.drivers.sqlalchemy import SQLAlchemyDriver
 from jsonapi_collections.filter import FilterParameter
 from jsonapi_collections.sort import SortValue
 
@@ -7,23 +7,22 @@ from jsonapi_collections.sort import SortValue
 class Collection(object):
     """JSONAPI resource collection handler."""
 
-    def __init__(self, model, parameters, schema=None):
+    def __init__(self, model, parameters, driver=None, schema=None):
         """Initialize the collection controller.
 
         :param model: SQLAlchemy model class.
         :param parameters: Dictionary of parameter, value pairs.
+        :param driver: `jsonapi_collections` driver instance.
         :param schema: Schema to validate against.
             If `None`, the key, value pairs will be validated against
             the model.
         """
         self.model = model
         self.parameters = self._handle_parameters(parameters)
-        self.schema = schema
+        self.schema = schema or model
 
-        if schema is not None:
-            self.driver = sqlalchemy.SQLAlchemyDriver(self)
-        else:
-            self.driver = marshmallow.MarshmallowDriver(self)
+        driver = driver or SQLAlchemyDriver
+        self.driver = driver(self)
 
     def get_filters(self):
         """Return a list of filters."""
