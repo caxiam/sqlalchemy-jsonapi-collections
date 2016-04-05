@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from jsonapi_collections.drivers import BaseDriver
 
@@ -8,16 +8,9 @@ from jsonapi_collections.drivers import BaseDriver
 class SQLAlchemyDriver(BaseDriver):
     """SQLAlchemy bindings."""
 
-    def get_column(self, field, model=None):
-        """Return the provided field.
-
-        We return the field because it is already a SQLAlchemy column
-        instance.
-
-        :param field: A `SQLAlchemy` column instance.
-        :param model: Unused for this driver.
-        """
-        return field
+    def get_column(self, column_name, model=None):
+        """Return a column instance."""
+        return self.get_field(column_name, model)
 
     def get_column_name(self, field_name, schema=None):
         """Return a string reference to a model column."""
@@ -26,17 +19,16 @@ class SQLAlchemyDriver(BaseDriver):
     def get_field(self, field_name, schema=None):
         """Return a SQLAlchemy column instance.
 
-        :param field: A string reference to a column's name.
+        :param field_name: A string reference to a field's name.
         """
-        return getattr(schema or self.collection.model, field, None)
+        return getattr(schema or self.collection.model, field_name, None)
 
     def get_related_schema(self, field):
+        """Return a related schema reference."""
         return self.get_column_model(field)
 
     def deserialize(self, field, values):
         """Deserialize a set of values."""
-        if isinstance(field, str):
-            field = self.get_column(field)
         return [self._deserialize(field, value) for value in values]
 
     def _deserialize(self, column, value):

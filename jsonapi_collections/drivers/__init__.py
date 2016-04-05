@@ -11,13 +11,13 @@ class BaseDriver(object):
         """
         self.collection = collection
 
-    def get_column_model(self, relationship):
+    def get_column_model(self, column):
         """Get the parent model of a relationship."""
-        return relationship.property.mapper.class_
+        return column.property.mapper.class_
 
     def get_column_type(self, column):
         """Return the column's Python type."""
-        return self.column.property.columns[0].type.python_type
+        return column.property.columns[0].type.python_type
 
     def is_enum(self, column):
         """Determine if a column is an enumeration."""
@@ -43,9 +43,9 @@ class BaseDriver(object):
         """
         raise NotImplementedError
 
-   def get_related_schema(self, field):
-       """Return a related schema reference."""
-       raise NotImplementedError
+    def get_related_schema(self, field):
+        """Return a related schema reference."""
+        raise NotImplementedError
 
     def deserialize(self, column, values):
         """Parse a set of values into the appropriate type."""
