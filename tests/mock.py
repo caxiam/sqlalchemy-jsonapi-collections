@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from sqlalchemy import case, orm
-from marshmallow import class_registry
+from marshmallow import class_registry, validate
 from marshmallow.base import SchemaABC
 from marshmallow_jsonapi import fields, Schema
 
@@ -152,7 +152,7 @@ class PersonSchema(Schema):
     name = fields.String()
     age = fields.Integer()
     is_employed = fields.Boolean()
-    gender = fields.String()
+    gender = fields.String(validate=validate.OneOf(['male', 'female']))
     rate = fields.Decimal(as_string=True, places=2)
     employed_integer = fields.Integer()
     created_at = fields.DateTime()
