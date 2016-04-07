@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from decimal import Decimal
 
+from jsonapi_collections.errors import FieldError
 from sqlalchemy import and_, or_
 
 
 class FilterParameter(object):
     """Formulate a query filter."""
+
+    relationship = None
 
     def __init__(self, driver, field_name, values):
         """Set the column, driver, many, and values attributes.
@@ -21,10 +23,8 @@ class FilterParameter(object):
         if "." in field_name:
             relationship_name, field_name = field_name.split('.')
 
-            relationship_column_name = self.driver.get_column_name(
-                relationship_name)
-            self.relationship = self.driver.get_column(
-                relationship_column_name)
+            column_name = self.driver.get_column_name(relationship_name)
+            self.relationship = self.driver.get_column(column_name)
 
             relationship_field = self.driver.get_field(relationship_name)
             related_schema = self.driver.get_related_schema(relationship_field)
@@ -36,10 +36,8 @@ class FilterParameter(object):
             self.column = self.driver.get_column(column_name, model)
         else:
             field = self.driver.get_field(field_name)
-
             column_name = self.driver.get_column_name(field_name)
             self.column = self.driver.get_column(column_name)
-            self.relationship = None
 
         self.values = self.driver.deserialize(field, values)
 
@@ -93,9 +91,19 @@ class FilterParameter(object):
         :param parameters: A dictionary of field, value pairs.
         """
         filters = []
+        errors = []
         for field_name, values in parameters.iteritems():
-            filters.append(cls(driver, field_name, values))
-        return filters
+            try:
+                filters.append(cls(driver, field_name, values))
+            except FieldError as exc:
+                message = {
+                    "source": {
+                        "parameter": 'filter[{}]'.format(field_name)
+                    },
+                    "detail": exc.message
+                }
+                errors.append(message)
+        return filters, errors
 
     @staticmethod
     def filter_by(query, filters):
