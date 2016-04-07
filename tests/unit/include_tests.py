@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from jsonapi_collections import IncludeValue
+from jsonapi_collections.include import IncludeValue
 from tests import UnitTestCase
 from tests.mock import (
     CompanyModel, EmployeeModel, EmployeeSchema, PersonModel, PersonSchema
