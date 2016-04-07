@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from jsonapi_collections.errors import FieldError
 
 
 class BaseDriver(object):
@@ -13,7 +14,13 @@ class BaseDriver(object):
 
     def get_column_model(self, column):
         """Get the parent model of a relationship."""
-        return column.property.mapper.class_
+        if self.is_relationship(column):
+            return column.property.mapper.class_
+        raise FieldError('Invalid relationship specified.')
+
+    def is_relationship(self, column):
+        """Determine if a field is a relationship."""
+        return hasattr(column.property, 'mapper')
 
     def get_column_type(self, column):
         """Return the column's Python type."""

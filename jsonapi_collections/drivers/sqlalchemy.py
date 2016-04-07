@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from jsonapi_collections.drivers import BaseDriver
+from jsonapi_collections.errors import FieldError
 
 
 class SQLAlchemyDriver(BaseDriver):
@@ -21,7 +22,10 @@ class SQLAlchemyDriver(BaseDriver):
 
         :param field_name: A string reference to a field's name.
         """
-        return getattr(schema or self.collection.model, field_name, None)
+        field = getattr(schema or self.collection.model, field_name, None)
+        if field is None:
+            raise FieldError('Invalid field specified.')
+        return field
 
     def get_related_schema(self, field):
         """Return a related schema reference."""
@@ -34,18 +38,21 @@ class SQLAlchemyDriver(BaseDriver):
     def _deserialize(self, column, value):
         """Deserialize a value into its Python type."""
         if self.is_enum(column) and value not in self._enum_choices(column):
-            raise ValueError
+            raise FieldError('Not a valid choice.')
 
         if value == '':
             return None
 
         column_type = self.get_column_type(column)
-        if column_type == datetime:
-            return datetime.strptime(value, '%Y-%m-%d')
-        elif column_type in [bool, int, Decimal]:
-            return column_type(value)
+        try:
+            if column_type == datetime:
+                return datetime.strptime(value, '%Y-%m-%d')
+            elif column_type in [bool, int, Decimal]:
+                return column_type(value)
+        except (ValueError, InvalidOperation) as exc:
+            raise FieldError(exc.message)
         return value
 
     def _enum_choices(self, column):
         """Return a set of choices."""
-        return self.column.property.columns[0].type.enums
+        return column.property.columns[0].type.enums

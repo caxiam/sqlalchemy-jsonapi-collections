@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from jsonapi_collections.drivers import BaseDriver
+from jsonapi_collections.errors import FieldError
 
 
 class MarshmallowDriver(BaseDriver):
@@ -17,12 +18,23 @@ class MarshmallowDriver(BaseDriver):
     def get_field(self, field_name, schema=None):
         """Return a marshmallow field instance."""
         schema = schema or self.collection.schema
-        return schema._declared_fields.get(field_name)
+        field = schema._declared_fields.get(field_name)
+        if field is None:
+            raise FieldError('Invalid field specified.')
+        return field
 
     def get_related_schema(self, field):
         """Return a related schema reference."""
-        return getattr(field, 'schema')
+        schema = getattr(field, 'schema', None)
+        if schema is None:
+            raise FieldError('Invalid relationship specified.')
+        return schema
 
     def deserialize(self, field, values):
         """Deserialize a given set of values into their python types."""
-        return [field.deserialize(value) for value in values]
+        try:
+            return [field.deserialize(value) for value in values]
+        except Exception as exc:
+            if exc.__class__.__name__ == 'ValidationError':
+                raise FieldError(exc)
+            raise
