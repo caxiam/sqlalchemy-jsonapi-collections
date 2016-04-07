@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from jsonapi_collections.drivers.sqlalchemy import SQLAlchemyDriver
+from jsonapi_collections.errors import JSONAPIError
 from jsonapi_collections.filter import FilterParameter
 from jsonapi_collections.sort import SortValue
 
@@ -20,20 +21,22 @@ class Collection(object):
         self.model = model
         self.parameters = self._handle_parameters(parameters)
         self.schema = schema or model
-
-        driver = driver or SQLAlchemyDriver
-        self.driver = driver(self)
+        self.driver = driver(self) if driver else SQLAlchemyDriver(self)
 
     def filter_query(self, query):
         """Permutate `SQLAlchemy` query with filtering."""
         field_names = self.parameters.get('filters', {})
-        filters = FilterParameter.generate(self.driver, field_names)
+        filters, errors = FilterParameter.generate(self.driver, field_names)
+        if errors:
+            raise JSONAPIError(errors)
         return FilterParameter.filter_by(query, filters)
 
     def sort_query(self, query):
         """Permutate `SQLAlchemy` query with sorting."""
         field_names = self.parameters.get('sort', [])
-        sorts = SortValue.generate(self.driver, field_names)
+        sorts, error = SortValue.generate(self.driver, field_names)
+        if error:
+            raise JSONAPIError([error])
         return SortValue.sort_by(query, sorts)
 
     def _handle_parameters(self, parameters):
@@ -48,7 +51,7 @@ class Collection(object):
         sort = parameters.pop('sort', '')
         if sort == '':
             return []
-        return sort
+        return sort.split(',')
 
     def _get_filtered_fields(self, parameters):
         """Return a dictionary of field, value pairs to filter by."""
