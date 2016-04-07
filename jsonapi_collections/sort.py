@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import desc
 
+from jsonapi_collections.errors import FieldError
+
 
 class SortValue(object):
     """Formulate a query sort."""
@@ -18,16 +20,21 @@ class SortValue(object):
         if "." in field_name:
             relationship_name, attribute_name = field_name.split('.')
 
-            relationship = driver.get_field(relationship_name)
-            related_schema = driver.get_related_schema(relationship)
+            relationship_field = driver.get_field(relationship_name)
+            relationship_column = driver.get_column(driver.get_column_name(
+                relationship_name))
+            relationship_schema = driver.get_related_schema(relationship_field)
+            relationship_model = driver.get_column_model(relationship_column)
 
-            field = getattr(attribute_name, related_schema)
+            column_name = driver.get_column_name(
+                attribute_name, relationship_schema)
+            column = driver.get_column(column_name, relationship_model)
             self.join = relationship_name
         else:
-            field = driver.get_field(field_name)
+            column_name = driver.get_column_name(field_name)
+            column = driver.get_column(column_name)
             self.join = None
 
-        column = driver.get_column(field)
         if descending:
             self.sort = desc(column)
         else:
@@ -47,9 +54,15 @@ class SortValue(object):
         :param field_names: String list of attributes.
         """
         sorts = []
+        errors = []
         for field_name in field_names:
-            sorts.append(cls(driver, field_name))
-        return sorts
+            try:
+                sorts.append(cls(driver, field_name))
+            except FieldError as exc:
+                errors.append(exc.message)
+        if errors:
+            return sorts, {"source": {"parameter": 'sort'}, "detail": errors}
+        return sorts, None
 
     @staticmethod
     def sort_by(query, values):
