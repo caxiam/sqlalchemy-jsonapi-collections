@@ -42,7 +42,27 @@ class FilterParameter(object):
         self.values = self.driver.deserialize(field, values)
 
     def __call__(self):
-        """Generate a `SQLAlchemy` filter."""
+        """Create a `SQLAlchemy` query expression.
+
+        Filters are constructed with three considerations:
+            * Is this query occuring across a relationship?
+            * Is this query one-to-many or many-to-many?
+            * Does the query need to evaluate more than one value?
+
+        If the query is not filtering across a relationship column, we
+        can return the filters formulated by the `_prepare_strategies`
+        call.  Multiple strategies are wrapped in an `or_` function.
+
+        If the query is a relationship, we determine whether or not the
+        relationship has many related models or has one related model.
+
+        If a many-to-many relationship is detected, we query the values
+        with the `any` method.  If a one-to-many relationship is
+        detected, we query the values with the `has` method.
+
+        If the query has more than one strategy it needs to executed
+        as an argument to the `or_` function.
+        """
         filters = self._prepare_strategies(self.values)
 
         if self.relationship is None:
@@ -65,12 +85,46 @@ class FilterParameter(object):
         return self.driver.get_column_type(self.column)
 
     def _prepare_strategies(self, values):
+        """Return a set of filters.
+
+        The `_prepare_strategies` method calls `_prepare_strategy` in a
+        loop and returns the aggregate set of strategies.
+
+        :param values: List of typed values to filter with.
+        """
         filters = []
         for value in values:
             filters.append(self._prepare_strategy(value))
         return filters
 
     def _prepare_strategy(self, value):
+        """Return a `SQLAlchemy` query expression.
+
+        The `_prepare_strategy` method considers three things:
+            * Are you filtering against an Enum column instance?
+            * Are you filtering with a `None` type value.
+            * Are you filtering against some specifically handled type.
+
+        If the column is determined to be an enumeration then no
+        meaningful filtering can occur other than a simple equality
+        check.
+
+        If the value is determined to be a `None` type then no
+        meaningful filtering can occur other than a simple equality
+        check.
+
+        If the column's type is determined to be one of the special
+        cases, specialized filtering can occur. This filtering is not
+        specified by the JSONAPI 1.0 specification.  Strings columns
+        are filtered as a wildcard search.  Boolean columns are
+        filtered using the `is_` method. Datetime columns retrieve all
+        datetimes within the current day.
+
+        If the column is not a special type, a simple equality check
+        against the value is returned.
+
+        :param value: Typed value to filter with.
+        """
         if self.driver.is_enum(self.column) or value is None:
             return self.column == value
 
@@ -85,7 +139,19 @@ class FilterParameter(object):
 
     @classmethod
     def generate(cls, driver, parameters):
-        """Parse a dictionary into `FilterParameter` instances.
+        """Parse field, value pairs into `FilterParameter` instances.
+
+        The `generate` classmethod bulk initializes a set of field,
+        value pairs into the `FilterParameter` class.
+
+        A successful generation results in the `filters` list being
+        appended the newly formed instance.  A failed generation
+        results in a JSONAPI 1.0 specification error object being
+        appended to the errors list.
+
+        This method can return both a set of filters and a set of
+        errors.  It is recommended that you evaluate the errors
+        recieved before continuing.
 
         :param driver: `jsonapi_collections` driver instance.
         :param parameters: A dictionary of field, value pairs.
@@ -109,8 +175,12 @@ class FilterParameter(object):
     def filter_by(query, filters):
         """Apply a series of `FilterParameter` instances as query filters.
 
-        :param query: A `SQLAlchemy` query object.
-        :param filters: A list of `FilterParameter` instances.
+        The `filter_by` staticmethod acts as a helper method to always
+        ensure that API changes do not disrupt the general process of
+        filter application.
+
+        :param query: `SQLAlchemy` query object.
+        :param filters: List of `FilterParameter` instances.
         """
         for filter in filters:
             query = query.filter(filter())

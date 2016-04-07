@@ -3,7 +3,14 @@ from jsonapi_collections.errors import FieldError
 
 
 class BaseDriver(object):
-    """Extensible driver template for interacting with SQLAlchemy."""
+    """Extensible driver template for interacting with `SQLAlchemy`.
+
+    Drivers act a bindings for validating and extracting relationship
+    and attribute data.
+
+    The `BaseDriver` template provides generic `SQLAlchemy` bindings as
+    well as overridable methods for interacting with third-party schemas.
+    """
 
     def __init__(self, collection):
         """DO NOT OVERRIDE.
