@@ -155,7 +155,7 @@ class PersonSchema(Schema):
     gender = fields.String(validate=validate.OneOf(['male', 'female']))
     rate = fields.Decimal(as_string=True, places=2)
     employed_integer = fields.Integer()
-    created_at = fields.DateTime()
+    created_at = fields.DateTime(format='%Y-%m-%d')
 
     companies = SchemaRelationship(many=True, related_schema=CompanySchema)
     employee = SchemaRelationship(many=False, related_schema=EmployeeSchema)
