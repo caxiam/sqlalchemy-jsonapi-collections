@@ -152,7 +152,7 @@ class Resource(object):
         :param key: String reference to dictionary key.
         :param parameters: Dictionary of parameters specified during init.
         """
-        key = parameters.pop(key, '')
+        key = parameters.get(key, '')
         if key == '':
             return []
         return key.split(',')
