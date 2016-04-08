@@ -27,19 +27,17 @@ class FilterParameter(object):
             self.relationship = self.driver.get_column(column_name)
 
             relationship_field = self.driver.get_field(relationship_name)
-            related_schema = self.driver.get_related_schema(relationship_field)
-            field = self.driver.get_field(field_name, related_schema)
+            schema = self.driver.get_related_schema(relationship_field)
 
             model = self.driver.get_column_model(self.relationship)
-            column_name = self.driver.get_column_name(
-                field_name, related_schema)
+            column_name = self.driver.get_column_name(field_name, schema)
             self.column = self.driver.get_column(column_name, model)
         else:
-            field = self.driver.get_field(field_name)
             column_name = self.driver.get_column_name(field_name)
             self.column = self.driver.get_column(column_name)
+            schema = None
 
-        self.values = self.driver.deserialize(field, values)
+        self.values = self.driver.deserialize(field_name, values, schema)
 
     def __call__(self):
         """Create a `SQLAlchemy` query expression.

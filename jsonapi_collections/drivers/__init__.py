@@ -61,7 +61,7 @@ class BaseDriver(object):
         """Return a related schema reference."""
         raise NotImplementedError
 
-    def deserialize(self, column, values):
+    def deserialize(self, column, values, schema=None):
         """Parse a set of values into the appropriate type."""
         raise NotImplementedError
 
