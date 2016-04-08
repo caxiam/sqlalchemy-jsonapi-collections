@@ -2,11 +2,12 @@
 from jsonapi_collections.drivers.sqlalchemy import SQLAlchemyDriver
 from jsonapi_collections.errors import JSONAPIError
 from jsonapi_collections.filter import FilterParameter
+from jsonapi_collections.include import IncludeValue
 from jsonapi_collections.sort import SortValue
 
 
-class Collection(object):
-    """The `Collection` object acts as the central orchestration object.
+class Resource(object):
+    """The `Resource` object acts as the central orchestration object.
 
     Supplying the minimum set of a arguments, `model` and `parameters`,
     offers the full suite of filtering and sorting capability to
@@ -15,7 +16,7 @@ class Collection(object):
     control how `SQLAlchemy` columns are accessed from their JSONAPI
     field representations.
 
-    To use the `Collection` object you must first initialize it.  Once
+    To use the `Resource` object you must first initialize it.  Once
     initialized, call the `filter_query` or `sort_query` methods
     against a `SQLAlchemy` query object.  The response from both
     methods will be a permutated query object.
@@ -88,25 +89,34 @@ class Collection(object):
             raise JSONAPIError([error])
         return SortValue.sort_by(query, sorts)
 
+    def paginated_response(self, query):
+        """Paginate and retrieve a list of models."""
+        pass
+
+    def compound_response(self, models):
+        """Compound a response object.
+
+        :params models: List of `SQLAlchemy` model instances.
+        """
+        if not isinstance(models, list):
+            models = [models]
+        field_names = self.parameters.get('include', [])
+        includes, error = IncludeValue.generate(self.driver, field_names)
+        if error:
+            raise JSONAPIError([error])
+
+        included = []
+        for model in models:
+            included.extend(IncludeValue.include(model, includes))
+        return included
+
     def _handle_parameters(self, parameters):
         """Return a formatted JSONAPI parameters object."""
         return {
-            'sort': self._get_sorted_fields(parameters),
-            'filters': self._get_filtered_fields(parameters)
+            'filters': self._get_filtered_fields(parameters),
+            'include': self._get_parameter_values('include', parameters),
+            'sort': self._get_parameter_values('sort', parameters),
         }
-
-    def _get_sorted_fields(self, parameters):
-        """Return a list of field names to sort by.
-
-        If the `sort` parameter is specified but does not contain a
-        value then the `sort` key will be ignored.
-
-        :param parameters: A dictionary of parameters specified during init.
-        """
-        sort = parameters.pop('sort', '')
-        if sort == '':
-            return []
-        return sort.split(',')
 
     def _get_filtered_fields(self, parameters):
         """Return a dictionary of field, value pairs to filter by.
@@ -128,3 +138,21 @@ class Collection(object):
                 value = value.split(',')
             filters[key[7:-1]] = value
         return filters
+
+    def _get_pagination_parameters(self, parameters):
+        """Return a dictionary of parameter, value pairs to paginate by."""
+        pass
+
+    def _get_parameter_values(self, key, parameters):
+        """Return a list of field names.
+
+        If the `key` parameter is specified but does not contain a
+        value then the `key` key will be ignored.
+
+        :param key: String reference to dictionary key.
+        :param parameters: Dictionary of parameters specified during init.
+        """
+        key = parameters.pop(key, '')
+        if key == '':
+            return []
+        return key.split(',')
