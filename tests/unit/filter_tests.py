@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import date
 
-from jsonapi_collections import Collection
+from jsonapi_collections import Resource
 from jsonapi_collections.drivers.marshmallow import MarshmallowDriver
 from jsonapi_collections.errors import JSONAPIError
 from tests import UnitTestCase
@@ -24,7 +24,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(name='A PRODUCT Wildcard')
 
         parameters = {'filter[name]': 'prod'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -34,7 +34,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(name='A PRODUCT Wildcard')
 
         parameters = {'filter[name]': 'prod,test,card'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -44,7 +44,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(gender='male')
 
         parameters = {'filter[gender]': 'male'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -55,7 +55,7 @@ class SQLAlchemyTestCase(FilterTestCase):
 
         try:
             parameters = {'filter[gender]': 'mal'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -68,7 +68,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(rate='12.51')
 
         parameters = {'filter[rate]': '12.51'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -79,7 +79,7 @@ class SQLAlchemyTestCase(FilterTestCase):
 
         try:
             parameters = {'filter[rate]': 'a'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -91,7 +91,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(is_employed=True)
 
         parameters = {'filter[is_employed]': '1'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -101,7 +101,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock()
 
         parameters = {'filter[created_at]': date.today().strftime('%Y-%m-%d')}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -111,7 +111,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(age=80)
 
         parameters = {'filter[age]': '80'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -121,7 +121,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(is_employed=True)
 
         parameters = {'filter[employed_integer]': '1'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -132,7 +132,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         EmployeeModel.mock(name="employee", person_id=person.id)
 
         parameters = {'filter[employee.name]': 'EMPLOYEE'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -143,7 +143,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         PersonModel.mock(companies=[company])
 
         parameters = {'filter[companies.name]': 'COMPANY'}
-        query = Collection(self.model, parameters).filter_query(self.query)
+        query = Resource(self.model, parameters).filter_query(self.query)
 
         result = query.all()
         self.assertEqual(len(result), 1)
@@ -152,7 +152,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         """Test filtering by an unknown field."""
         try:
             parameters = {'filter[xyz]': 'value'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -163,7 +163,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         """Test filtering by an invalid relationship field."""
         try:
             parameters = {'filter[employee.xyz]': 'value'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -175,7 +175,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         """Test filtering by an invalid relationship value."""
         try:
             parameters = {'filter[rate.name]': 'whatever'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -187,7 +187,7 @@ class SQLAlchemyTestCase(FilterTestCase):
         """Test filtering by an invalid field value."""
         try:
             parameters = {'filter[datetime]': 'notadate'}
-            Collection(self.model, parameters).filter_query(self.query)
+            Resource(self.model, parameters).filter_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertIn('detail', message['errors'][0])
@@ -204,7 +204,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(name='A PRODUCT Wildcard')
 
         parameters = {'filter[name]': 'prod'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -216,7 +216,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(name='A PRODUCT Wildcard')
 
         parameters = {'filter[name]': 'prod,test,card'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -228,7 +228,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(gender='male')
 
         parameters = {'filter[gender]': 'male'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -241,7 +241,7 @@ class MarshmallowTestCase(FilterTestCase):
 
         try:
             parameters = {'filter[gender]': 'mal'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:
@@ -256,7 +256,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(rate='12.51')
 
         parameters = {'filter[rate]': '12.51'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -269,7 +269,7 @@ class MarshmallowTestCase(FilterTestCase):
 
         try:
             parameters = {'filter[rate]': 'a'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:
@@ -283,7 +283,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(is_employed=True)
 
         parameters = {'filter[is_employed]': '1'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -295,7 +295,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock()
 
         parameters = {'filter[created_at]': date.today().strftime('%Y-%m-%d')}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -307,7 +307,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(age=80)
 
         parameters = {'filter[age]': '80'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -319,7 +319,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(is_employed=True)
 
         parameters = {'filter[employed_integer]': '1'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -332,7 +332,7 @@ class MarshmallowTestCase(FilterTestCase):
         EmployeeModel.mock(name="employee", person_id=person.id)
 
         parameters = {'filter[employee.name]': 'EMPLOYEE'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -345,7 +345,7 @@ class MarshmallowTestCase(FilterTestCase):
         PersonModel.mock(companies=[company])
 
         parameters = {'filter[companies.name]': 'COMPANY'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, MarshmallowDriver, PersonSchema).\
             filter_query(self.query)
 
@@ -356,7 +356,7 @@ class MarshmallowTestCase(FilterTestCase):
         """Test filtering by an unknown field."""
         try:
             parameters = {'filter[xyz]': 'value'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:
@@ -369,7 +369,7 @@ class MarshmallowTestCase(FilterTestCase):
         """Test filtering by an invalid relationship field."""
         try:
             parameters = {'filter[employee.xyz]': 'value'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:
@@ -383,7 +383,7 @@ class MarshmallowTestCase(FilterTestCase):
         """Test filtering by an invalid relationship value."""
         try:
             parameters = {'filter[rate.name]': 'whatever'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:
@@ -397,7 +397,7 @@ class MarshmallowTestCase(FilterTestCase):
         """Test filtering by an invalid field value."""
         try:
             parameters = {'filter[datetime]': 'notadate'}
-            Collection(
+            Resource(
                 self.model, parameters, MarshmallowDriver, PersonSchema).\
                 filter_query(self.query)
         except JSONAPIError as exc:

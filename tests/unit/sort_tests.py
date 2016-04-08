@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from jsonapi_collections import Collection
+from jsonapi_collections import Resource
 from jsonapi_collections.drivers import marshmallow
 from jsonapi_collections.errors import JSONAPIError
 from tests import UnitTestCase
@@ -24,7 +24,7 @@ class SQLAlchemySortTestCase(SortTestCase):
         PersonModel.mock(name="B")
 
         parameters = {'sort': 'name'}
-        query = Collection(self.model, parameters).sort_query(self.query)
+        query = Resource(self.model, parameters).sort_query(self.query)
 
         result = query.all()
         self.assertEqual(result[0].name, 'A')
@@ -35,7 +35,7 @@ class SQLAlchemySortTestCase(SortTestCase):
         PersonModel.mock(name="B")
 
         parameters = {'sort': '-name'}
-        query = Collection(self.model, parameters).sort_query(self.query)
+        query = Resource(self.model, parameters).sort_query(self.query)
 
         result = query.all()
         self.assertEqual(result[0].name, 'B')
@@ -48,7 +48,7 @@ class SQLAlchemySortTestCase(SortTestCase):
         PersonModel.mock(name="B", companies=[b])
 
         parameters = {'sort': 'companies.name'}
-        query = Collection(self.model, parameters).sort_query(self.query)
+        query = Resource(self.model, parameters).sort_query(self.query)
 
         result = query.all()
         self.assertEqual(result[0].companies[0].name, 'First')
@@ -61,7 +61,7 @@ class SQLAlchemySortTestCase(SortTestCase):
         PersonModel.mock(name="B", companies=[b])
 
         parameters = {'sort': '-companies.name'}
-        query = Collection(self.model, parameters).sort_query(self.query)
+        query = Resource(self.model, parameters).sort_query(self.query)
 
         result = query.all()
         self.assertEqual(result[0].companies[0].name, 'Last')
@@ -72,7 +72,7 @@ class SQLAlchemySortTestCase(SortTestCase):
 
         try:
             parameters = {'sort': 'x'}
-            Collection(self.model, parameters).sort_query(self.query)
+            Resource(self.model, parameters).sort_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertTrue(
@@ -86,7 +86,7 @@ class SQLAlchemySortTestCase(SortTestCase):
 
         try:
             parameters = {'sort': 'companies.x'}
-            Collection(self.model, parameters).sort_query(self.query)
+            Resource(self.model, parameters).sort_query(self.query)
         except JSONAPIError as exc:
             message = exc.message
             self.assertTrue(
@@ -104,7 +104,7 @@ class MarshmallowSortTestCase(SortTestCase):
         PersonModel.mock(name="B")
 
         parameters = {'sort': 'name'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
             sort_query(self.query)
 
@@ -117,7 +117,7 @@ class MarshmallowSortTestCase(SortTestCase):
         PersonModel.mock(name="B")
 
         parameters = {'sort': '-name'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
             sort_query(self.query)
 
@@ -132,7 +132,7 @@ class MarshmallowSortTestCase(SortTestCase):
         PersonModel.mock(name="B", companies=[b])
 
         parameters = {'sort': 'companies.name'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
             sort_query(self.query)
 
@@ -147,7 +147,7 @@ class MarshmallowSortTestCase(SortTestCase):
         PersonModel.mock(name="B", companies=[b])
 
         parameters = {'sort': '-companies.name'}
-        query = Collection(
+        query = Resource(
             self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
             sort_query(self.query)
 
@@ -160,7 +160,7 @@ class MarshmallowSortTestCase(SortTestCase):
 
         try:
             parameters = {'sort': 'x'}
-            Collection(
+            Resource(
                 self.model, parameters, marshmallow.MarshmallowDriver,
                 self.view).sort_query(self.query)
         except JSONAPIError as exc:
@@ -176,7 +176,7 @@ class MarshmallowSortTestCase(SortTestCase):
 
         try:
             parameters = {'sort': 'companies.x'}
-            Collection(
+            Resource(
                 self.model, parameters, marshmallow.MarshmallowDriver,
                 self.view).sort_query(self.query)
         except JSONAPIError as exc:

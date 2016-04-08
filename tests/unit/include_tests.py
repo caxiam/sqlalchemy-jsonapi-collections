@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from jsonapi_collections.include import IncludeValue
+from jsonapi_collections import Resource
+from jsonapi_collections.drivers import marshmallow
+from jsonapi_collections.errors import JSONAPIError
 from tests import UnitTestCase
 from tests.mock import (
     CompanyModel, EmployeeModel, EmployeeSchema, PersonModel, PersonSchema
@@ -13,75 +15,114 @@ class IncludeTestCase(UnitTestCase):
         self.model = PersonModel
         self.view = PersonSchema
         self.query = PersonModel.query
+        self.driver = marshmallow.MarshmallowDriver
 
-    def test_include_foreign_key(self):
-        """Test including a foreign key relationship field."""
-        PersonModel.mock()
-        model = EmployeeModel.mock(person_id=1)
 
-        include = ['person']
-        iv_objects, errors = IncludeValue.generate(EmployeeSchema, include)
-        data = IncludeValue.include(iv_objects, model)
+class MarshmallowIncludeTestCase(IncludeTestCase):
 
-        self.assertTrue(errors == [])
-        self.assertTrue(len(data) == 1)
-
-    def test_include_one_to_many_relationship(self):
-        """Test including a one to many relationship field."""
+    def test_include_one_to_one(self):
+        """Test including a one-to-one relationship."""
         model = PersonModel.mock()
         EmployeeModel.mock(person_id=1)
 
-        include = ['employee']
-        iv_objects, errors = IncludeValue.generate(self.view, include)
-        data = IncludeValue.include(iv_objects, model)
+        parameters = {'include': 'employee'}
+        included = Resource(
+            self.model, parameters, self.driver, self.view).\
+            compound_response(model)
+        self.assertTrue(len(included) == 1)
 
-        self.assertTrue(errors == [])
-        self.assertTrue(len(data) == 1)
-
-    def test_include_many_to_many_relationship(self):
-        """Test including a many to many relationship field."""
-        company_1 = CompanyModel.mock()
-        company_2 = CompanyModel.mock()
-        model = PersonModel.mock(companies=[company_1, company_2])
-
-        include = ['companies']
-        iv_objects, errors = IncludeValue.generate(self.view, include)
-        data = IncludeValue.include(iv_objects, model)
-
-        self.assertTrue(errors == [])
-        self.assertTrue(len(data) == 2)
-
-    def test_include_multiple_relationships(self):
-        """Test including multiple relationship fields of differing
-        types.
-        """
+    def test_include_many_to_many(self):
+        """Test including a many-to-many relationship."""
         company = CompanyModel.mock()
         model = PersonModel.mock(companies=[company])
-        EmployeeModel.mock(person_id=1)
 
-        include = ['companies', 'employee']
-        iv_objects, errors = IncludeValue.generate(self.view, include)
-        data = IncludeValue.include(iv_objects, model)
-
-        self.assertTrue(errors == [])
-        self.assertTrue(len(data) == 2)
+        parameters = {'include': 'companies'}
+        included = Resource(
+            self.model, parameters, self.driver, self.view).\
+            compound_response(model)
+        self.assertTrue(len(included) == 1)
 
     def test_include_attribute(self):
-        """Test including an attribute field."""
-        include = ['name']
-        iv_objects, errors = IncludeValue.generate(self.view, include)
-        self.assertTrue(len(errors) == 1)
+        """Test including an attribute."""
+        model = PersonModel.mock()
 
-    def test_include_bogus_value(self):
-        """Test including a non-existant field."""
-        include = ['xyz']
-        iv_objects, errors = IncludeValue.generate(self.view, include)
-        self.assertTrue(len(errors) == 1)
+        try:
+            parameters = {'include': 'name'}
+            Resource(
+                self.model, parameters, self.driver, self.view).\
+                compound_response(model)
+            self.assertTrue(False)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'include')
+            self.assertIn('detail', message['errors'][0])
+            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
-    def test_include_missing_schema(self):
-        """Test including a relationship that has not defined the
-        related_schema property.
-        """
-        include = ['person_id']
-        iv_objects, errors = IncludeValue.generate(EmployeeSchema, include)
-        self.assertTrue(len(errors) == 1)
+    def test_include_missing_field(self):
+        """Test including an unknown field."""
+        model = PersonModel.mock()
+
+        try:
+            parameters = {'include': 'wxyz'}
+            Resource(
+                self.model, parameters, self.driver, self.view).\
+                compound_response(model)
+            self.assertTrue(False)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'include')
+            self.assertIn('detail', message['errors'][0])
+            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
+
+
+class SQLAlchemyIncludeTestCase(IncludeTestCase):
+
+    def test_include_one_to_one(self):
+        """Test including a one-to-one relationship."""
+        model = PersonModel.mock()
+        EmployeeModel.mock(person_id=1)
+
+        parameters = {'include': 'employee'}
+        included = Resource(self.model, parameters).compound_response(model)
+        self.assertTrue(len(included) == 1)
+
+    def test_include_many_to_many(self):
+        """Test including a many-to-many relationship."""
+        company = CompanyModel.mock()
+        model = PersonModel.mock(companies=[company])
+
+        parameters = {'include': 'companies'}
+        included = Resource(self.model, parameters).compound_response(model)
+        self.assertTrue(len(included) == 1)
+
+    def test_include_attribute(self):
+        """Test including an attribute."""
+        model = PersonModel.mock()
+
+        try:
+            parameters = {'include': 'name'}
+            Resource(self.model, parameters).compound_response(model)
+            self.assertTrue(False)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'include')
+            self.assertIn('detail', message['errors'][0])
+            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
+
+    def test_include_missing_field(self):
+        """Test including an unknown field."""
+        model = PersonModel.mock()
+
+        try:
+            parameters = {'include': 'wxyz'}
+            Resource(self.model, parameters).compound_response(model)
+            self.assertTrue(False)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'include')
+            self.assertIn('detail', message['errors'][0])
+            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
