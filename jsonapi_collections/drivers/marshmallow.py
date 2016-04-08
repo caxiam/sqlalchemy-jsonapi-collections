@@ -38,3 +38,6 @@ class MarshmallowDriver(BaseDriver):
             if exc.__class__.__name__ == 'ValidationError':
                 raise FieldError(exc)
             raise
+
+    def serialize(self, schema, items):
+        return schema(many=True).dump(items).data.get('data', [])

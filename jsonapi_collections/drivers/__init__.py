@@ -64,3 +64,7 @@ class BaseDriver(object):
     def deserialize(self, column, values):
         """Parse a set of values into the appropriate type."""
         raise NotImplementedError
+
+    def serialize(self, models):
+        """Serialize a set of SQLAlchemy instances."""
+        raise NotImplementedError

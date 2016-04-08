@@ -5,6 +5,29 @@ from decimal import Decimal, InvalidOperation
 from jsonapi_collections.drivers import BaseDriver
 from jsonapi_collections.errors import FieldError
 
+import json
+
+
+
+class UnsafeEncoder(json.JSONEncoder):
+    """Do not use an encoder like this in production.  You need to have
+    your own specialized security concious encoder.
+    """
+
+    def default(self, obj):
+        fields = {}
+        columns = [
+            x for x in dir(obj) if not x.startswith('_') and
+            x != 'metadata']
+        for column in columns:
+            data = obj.__getattribute__(column)
+            try:
+                json.dumps(data)
+                fields[column] = data
+            except TypeError:
+                fields[column] = None
+        return fields
+
 
 class SQLAlchemyDriver(BaseDriver):
     """SQLAlchemy bindings."""
@@ -56,3 +79,7 @@ class SQLAlchemyDriver(BaseDriver):
     def _enum_choices(self, column):
         """Return a set of choices."""
         return column.property.columns[0].type.enums
+
+    def serialize(self, schema, items):
+        """Dangerously serialize `SQLAlchemy` model instance."""
+        return [json.dumps(item, cls=UnsafeEncoder) for item in items]
