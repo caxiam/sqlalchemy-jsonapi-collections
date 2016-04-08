@@ -9,7 +9,7 @@ API Reference
 Collection
 ==========
 
-.. autoclass:: jsonapi_collections.Collection
+.. autoclass:: jsonapi_collections.Resource
     :inherited-members:
     :private-members:
 

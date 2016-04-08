@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from marshmallow_jsonapi.fields import BaseRelationship
 from jsonapi_collections.errors import FieldError
 
 
@@ -12,34 +11,30 @@ class IncludeValue(object):
     """
 
     error = 'Invalid relationship specified: {}.'
-    id_field = 'id'
 
-    def __init__(self, schema, value, id_field='id'):
+    def __init__(self, driver, field_name, id_field='id'):
         """Validate the inputs.
 
         :param schema: Marshmallow schema reference.
         :param value: String name of a relationship field.
         :param id_field: Optionally specified `ID` field to query.
         """
-        field = schema._declared_fields.get(value)
-        if value is None:
-            raise FieldError(self.error.format(value))
-        if not isinstance(field, BaseRelationship):
-            raise FieldError(self.error.format(value))
-
-        if getattr(field, 'related_schema') is None:
-            raise FieldError('Unsupported include: {}.'.format(value))
-
-        self.attribute = field.attribute or value
-        self.schema = field.schema
+        self.driver = driver
+        self.column_name = driver.get_column_name(field_name)
         self.id_field = id_field
+
+        field = driver.get_field(field_name)
+        self.view = driver.get_related_schema(field)
+
+        column = driver.get_column(self.column_name)
+        self.model = driver.get_column_model(column)
 
     def __call__(self, model):
         """Dump an `IncludeValue` instance to a dictionary.
 
         :param model: `SQLAlchemy` model instance.
         """
-        values = getattr(model, self.attribute)
+        values = getattr(model, self.column_name)
         if not isinstance(values, list):
             values = [values]
 
@@ -48,33 +43,34 @@ class IncludeValue(object):
             if isinstance(value, str) or isinstance(value, int):
                 ids.append(value)
             else:
-                ids.append(value.id)
+                ids.append(getattr(value, self.id_field))
 
-        include_model = self.schema.Meta.model
         if len(ids) == 0:
             return {}
-
-        items = include_model.query.filter(include_model.id.in_(ids)).all()
-        return self.schema(many=True).dump(items).data.get('data', [])
+        items = self.model.query.filter(self.model.id.in_(ids)).all()
+        return self.driver.serialize(self.view, items)
 
     @classmethod
-    def generate(cls, schema, values):
+    def generate(cls, driver, values):
         """Parse a series of strings into `IncludeValue` instances.
 
-        :param schema: Marshmallow schema reference.
+        :param driver: `jsonapi_collections` driver instance.
         :param values: String list of relationship fields to include.
         """
-        errors = []
         includes = []
+        errors = []
         for value in values:
             try:
-                includes.append(cls(schema, value))
+                includes.append(cls(driver, value))
             except FieldError as exc:
                 errors.append(exc.message)
-        return includes, errors
+        if errors:
+            return includes, {
+                "source": {"parameter": 'include'}, "detail": errors}
+        return includes, None
 
     @staticmethod
-    def include(includes, model):
+    def include(model, includes):
         """Dump a series of `IncludeValue` instances to a dictionary.
 
         :param includes: List of `IncludeValue` instances.
