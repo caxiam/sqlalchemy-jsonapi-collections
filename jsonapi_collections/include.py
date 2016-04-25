@@ -42,7 +42,7 @@ class IncludeValue(object):
         for value in values:
             if isinstance(value, str) or isinstance(value, int):
                 ids.append(value)
-            else:
+            elif value is not None:
                 ids.append(getattr(value, self.id_field))
 
         if len(ids) == 0:

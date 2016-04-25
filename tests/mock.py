@@ -31,6 +31,8 @@ class PersonModel(db.Model):
 
     companies = db.relationship(
         'CompanyModel', secondary=person_company, backref='persons')
+    employee = db.relationship(
+        'EmployeeModel', uselist=False, back_populates='person')
 
     @classmethod
     def mock(cls, **kwargs):
@@ -57,7 +59,7 @@ class EmployeeModel(db.Model):
     is_manager = db.Column(db.Boolean)
     created_at = db.Column(db.DateTime, default=datetime.now())
 
-    person = db.relationship('PersonModel', backref='employee')
+    person = db.relationship('PersonModel', back_populates='employee')
 
     @classmethod
     def mock(cls, **kwargs):

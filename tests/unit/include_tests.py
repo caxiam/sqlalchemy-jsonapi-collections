@@ -97,6 +97,14 @@ class SQLAlchemyIncludeTestCase(IncludeTestCase):
         included = Resource(self.model, parameters).compound_response(model)
         self.assertTrue(len(included) == 1)
 
+    def test_include_empty_relationship(self):
+        """Test including an empty one-to-one relationship."""
+        model = PersonModel.mock()
+
+        parameters = {'include': 'employee'}
+        included = Resource(self.model, parameters).compound_response(model)
+        self.assertTrue(len(included) == 0)
+
     def test_include_attribute(self):
         """Test including an attribute."""
         model = PersonModel.mock()
