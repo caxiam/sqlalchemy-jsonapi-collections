@@ -37,7 +37,8 @@ class FilterParameter(object):
             self.column = self.driver.get_column(column_name)
             schema = None
 
-        self.values = self.driver.deserialize(field_name, values, schema)
+        self.values = self.driver.deserialize(
+            self.column, field_name, values, schema)
 
     def __call__(self):
         """Create a `SQLAlchemy` query expression.

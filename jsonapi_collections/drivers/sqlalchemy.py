@@ -54,7 +54,7 @@ class SQLAlchemyDriver(BaseDriver):
         """Return a related schema reference."""
         return self.get_column_model(field)
 
-    def deserialize(self, field_name, values, schema=None):
+    def deserialize(self, column, field_name, values, schema=None):
         """Deserialize a set of values."""
         field = self.get_field(field_name, schema)
         return [self._deserialize(field, value) for value in values]

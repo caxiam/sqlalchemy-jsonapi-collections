@@ -30,7 +30,7 @@ class MarshmallowDriver(BaseDriver):
             raise FieldError('Invalid relationship specified.')
         return schema
 
-    def deserialize(self, field_name, values, schema=None):
+    def deserialize(self, column, field_name, values, schema=None):
         """Deserialize a given set of values into their python types."""
         field = self.get_field(field_name, schema)
         try:
