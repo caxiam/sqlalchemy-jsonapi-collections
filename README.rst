@@ -8,6 +8,7 @@ sqlalchemy-jsonapi-collections
 .. image:: https://codeclimate.com/github/caxiam/sqlalchemy-jsonapi-collections/badges/gpa.svg
    :target: https://codeclimate.com/github/caxiam/sqlalchemy-jsonapi-collections
    :alt: Code Climate
+.. image:: https://coveralls.io/repos/github/caxiam/sqlalchemy-jsonapi-collections/badge.svg?branch=master :target: https://coveralls.io/github/caxiam/sqlalchemy-jsonapi-collections?branch=master
 
 A JSONAPI URL parameter handling library.
 
