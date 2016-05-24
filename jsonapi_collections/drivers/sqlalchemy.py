@@ -84,3 +84,18 @@ class SQLAlchemyDriver(BaseDriver):
     def serialize(self, schema, items):
         """Dangerously serialize `SQLAlchemy` model instance."""
         return [json.dumps(item, cls=UnsafeEncoder) for item in items]
+
+    def validate_path(self, path):
+        """Return `False` if the provided path cannot be found."""
+        fields = path.split('.')
+        length = len(fields)
+        model = None
+        for pos, field in enumerate(fields, 1):
+            try:
+                field = self.get_field(field, model)
+            except FieldError:
+                return False
+            if pos != length and not self.is_relationship(field):
+                return False
+            model = field.property.mapper.class_
+        return True

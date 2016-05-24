@@ -68,3 +68,7 @@ class BaseDriver(object):
     def serialize(self, models):
         """Serialize a set of SQLAlchemy instances."""
         raise NotImplementedError
+
+    def validate_path(self, path):
+        """Validate a given field path."""
+        raise NotImplementedError
