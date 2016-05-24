@@ -39,9 +39,9 @@ class Resource(object):
             the model.
         """
         self.model = model
-        self.parameters = self._handle_parameters(parameters)
         self.schema = schema or model
         self.driver = driver(self) if driver else SQLAlchemyDriver(self)
+        self.parameters = self._handle_parameters(parameters)
 
     def filter_query(self, query):
         """Filter a given query by a set of parameters or error.
@@ -124,10 +124,10 @@ class Resource(object):
         filters, err = self._get_filtered_fields(parameters)
         errors.extend(err)
 
-        include, err = self._get_parameter_values('include', parameters)
+        include, err = self._get_included_parameters(parameters)
         errors.extend(err)
 
-        sort, err = self._get_parameter_values('sort', parameters)
+        sort, err = self._get_sorted_parameters(parameters)
         errors.extend(err)
 
         page, err = self._get_pagination_parameters(parameters)
@@ -155,9 +155,9 @@ class Resource(object):
             if not key.startswith('filter['):
                 continue
 
-            if not self.driver.validate_path(key):
+            if not self.driver.validate_attribute_path(key[7:-1]):
                 errors.append({
-                    'details': self.ERRORS['parameter'].format(key),
+                    'detail': self.ERRORS['parameter'].format(key),
                     'source': {'parameter': key}
                 })
                 continue
@@ -177,7 +177,7 @@ class Resource(object):
             if key.startswith('page[') or key == 'limit' or key == 'offset':
                 if not value.isdigit():
                     errors.append({
-                        'details': self.ERRORS['value'].format(key),
+                        'detail': self.ERRORS['value'].format(key),
                         'source': {'parameter': key}
                     })
                     continue
@@ -190,7 +190,7 @@ class Resource(object):
                 page['offset'] == value * parameters.get('page[size]', 0)
         return page, errors
 
-    def _get_parameter_values(self, key, parameters):
+    def _get_included_parameters(self, parameters):
         """Return a list of field names.
 
         If the `key` parameter is specified but does not contain a
@@ -199,16 +199,40 @@ class Resource(object):
         :param key: String reference to dictionary key.
         :param parameters: Dictionary of parameters specified during init.
         """
-        key = parameters.get(key, '')
-        if key == '':
-            return []
-
         errors = []
-        fields = key.split(',')
+        fields = parameters.get('include', '')
+        if fields == '':
+            return [], errors
+
+        fields = fields.split(',')
         for field in fields:
-            if not self.driver.validate_path(field):
+            if not self.driver.validate_relationship_path(field):
                 errors.append({
-                    'details': self.ERRORS['field'].format(field),
-                    'source': {'parameter': key}
+                    'detail': self.ERRORS['field'].format(field),
+                    'source': {'parameter': 'include'}
+                })
+        return fields, errors
+
+    def _get_sorted_parameters(self, parameters):
+        """Return a list of field names.
+
+        If the `key` parameter is specified but does not contain a
+        value then the `key` key will be ignored.
+
+        :param key: String reference to dictionary key.
+        :param parameters: Dictionary of parameters specified during init.
+        """
+        errors = []
+        fields = parameters.get('sort', '')
+        if fields == '':
+            return [], errors
+
+        fields = fields.split(',')
+        for field in fields:
+            validated_field = field[1:] if field.startswith('-') else field
+            if not self.driver.validate_attribute_path(validated_field):
+                errors.append({
+                    'detail': self.ERRORS['field'].format(field),
+                    'source': {'parameter': 'sort'}
                 })
         return fields, errors
