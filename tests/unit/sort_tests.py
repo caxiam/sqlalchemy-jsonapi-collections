@@ -78,7 +78,6 @@ class SQLAlchemySortTestCase(SortTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'sort')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
     def test_sort_invalid_relationship(self):
         """Test sorting against non-existant relationship attribute."""
@@ -92,7 +91,6 @@ class SQLAlchemySortTestCase(SortTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'sort')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
 
 class MarshmallowSortTestCase(SortTestCase):
@@ -168,7 +166,6 @@ class MarshmallowSortTestCase(SortTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'sort')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
     def test_sort_invalid_relationship(self):
         """Test sorting against non-existant relationship attribute."""
@@ -184,4 +181,3 @@ class MarshmallowSortTestCase(SortTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'sort')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))

@@ -57,7 +57,6 @@ class MarshmallowIncludeTestCase(IncludeTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'include')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
     def test_include_missing_field(self):
         """Test including an unknown field."""
@@ -74,10 +73,19 @@ class MarshmallowIncludeTestCase(IncludeTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'include')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
 
 class SQLAlchemyIncludeTestCase(IncludeTestCase):
+
+    def test_include_nested(self):
+        """Test including a nested relationship."""
+        company = CompanyModel.mock()
+        model = PersonModel.mock(companies=[company])
+        EmployeeModel.mock(person_id=model.id)
+
+        parameters = {'include': 'employee.person.companies'}
+        included = Resource(self.model, parameters).compound_response(model)
+        self.assertTrue(len(included) == 1)
 
     def test_include_one_to_one(self):
         """Test including a one-to-one relationship."""
@@ -118,7 +126,6 @@ class SQLAlchemyIncludeTestCase(IncludeTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'include')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
 
     def test_include_missing_field(self):
         """Test including an unknown field."""
@@ -133,4 +140,3 @@ class SQLAlchemyIncludeTestCase(IncludeTestCase):
             self.assertTrue(
                 message['errors'][0]['source']['parameter'] == 'include')
             self.assertIn('detail', message['errors'][0])
-            self.assertTrue(isinstance(message['errors'][0]['detail'], list))
