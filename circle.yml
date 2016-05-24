@@ -6,5 +6,9 @@ machine:
     - docker
 
 test:
+  pre:
+     - pip install coveralls
   override:
-     - nosetests -w tests/
+     - nosetests tests --with-coverage --cover-package=jsonapi_collections
+  post:
+     - coveralls

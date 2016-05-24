@@ -12,3 +12,4 @@ wsgiref==0.1.2
 recommonmark
 sphinx
 sphinx-autobuild
+coverage

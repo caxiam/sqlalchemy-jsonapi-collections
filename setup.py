@@ -10,7 +10,7 @@ setup(
     name='Flask-SQLAlchemy-JSONAPI',
     version='0.1',
     url='https://github.com/caxiam/sqlalchemy-jsonapi-collections',
-    license='BSD',
+    license='Apache Version 2.0',
     author='Colton Allen',
     author_email='colton.allen@caxiam.com',
     description='A collection response filtering library.',
@@ -26,7 +26,7 @@ setup(
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: Apache License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
