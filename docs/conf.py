@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'sqlalchemy-jsonapi-collections'
-copyright = u'2016, Colton Allen'
+copyright = u'2016 Code Axis Inc. d/b/a Caxiam'
 author = u'Colton Allen'
 
 # The version info for the project you're documenting, acts as replacement for
