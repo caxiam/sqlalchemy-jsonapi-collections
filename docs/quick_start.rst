@@ -3,78 +3,54 @@
 Quick Start
 ===========
 
-==========
-Filtering:
-==========
+====================
+Managing Collections
+====================
 
-For a given set of query parameters, pass a parameters dictionary object and the marshmallow schema to the `FilterParameter`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
-
-::
-
-    parameters = {
-        "filter[id]": "1,2,10",
-        "q": "xyz",
-        "sort": "-id"
-    }
-    filters, errors = FilterParameter.generate(schema, parameters)
-
-Apply the returned filteres by calling the `FilterParameter`'s `filter_by` staticmethod.
-
-query = FilterParameter.filter_by(query, filters)
-
-========
-Sorting:
-========
-
-Retrieve the values from the `sort` parameter and parse it into a list.
+To manage a query collection, instantiate a `Collection` object with the `model` and `parameters` arguments specified.
 
 ::
 
-    values = request.args.get('sort').split(',')
+    from jsonapi_collections import Collection
 
-Pass both the values and the marshmallow schema to the `SortValue`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
+    params = {'sort': 'attr_1,attr_2', 'filter[attr_1]': 'test'}
+    c = Collection(my_model, params)
 
-::
+You can optionally specify `driver` and `schema` arguments.  The driver acts as an intermediary between properity method calls.  The driver bindings supply a simple interface for the filter, sort, and include classes while also providing developers with the ability to use their own schema implementations.
 
-    sorts, errors = SortValue.generate(schema, values)
+With your collection instantiated, we can now create query filters and sorts.
 
-Apply the returned sorts by calling the `SortValue`'s `sort_by` staticmethod.
+**Filtering**
 
-::
-
-    query = SortValue.sort_by(query, sorts)
-
-==========
-Including:
-==========
-
-Query the database and return a model.
+To filter we call the `filter_query` method.
 
 ::
 
-    model = Product.query.first()
+    query = c.filter_query(query)
 
-Retrieve the values from the `include` parameter and parse it into a list.
+This will return a permutated query object or raise a `JSONAPIError`.
 
-::
+**Sorting**
 
-    values = request.args.get('include').split(',')
-
-Pass both the values and the marshmallow schema to the `IncludeValue`'s `generate` classmethod.  Determine if the returned errors object is acceptable and raise appropriately.
+To sort we call the `sort_query` method.
 
 ::
 
-    includes, errors = IncludeValue.generate(schema, values)
+    query = c.sort_query(query)
 
-Apply the returned includes by calling the `IncludeValue`'s `include` staticmethod.
+This will return a permutated query object or raise a `JSONAPIError`.
+
+================
+Creating Drivers
+================
+
+Drivers are a crucial part of the `jsonapi_collections` ecosystem.  To create your own driver for a custom schema implementation you need to complete the following:
+
+First, you must create a class the inherits from the `BaseDriver`.
+Second, you must override the unimplemented methods provided by the `BaseDriver`.
+
+Once you have a driver, you can pass a reference to the object in the `Collection` initialization process.  If the driver requires the use of a proprietary schema, then you need to pass that schema into the `Collection` object.
 
 ::
 
-    serialized_result = self.include(includes, model)
-
-Append the result to your the JSON object you intend to return.
-
-::
-
-    result['included'] = serialized_result
-    return result
+    c = Collection(my_model, params, MyCustomDriver, my_optional_schema)

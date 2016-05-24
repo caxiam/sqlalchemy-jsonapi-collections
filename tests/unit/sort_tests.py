@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from flask_sqlalchemy_jsonapi import SortValue
+from jsonapi_collections import Resource
+from jsonapi_collections.drivers import marshmallow
+from jsonapi_collections.errors import JSONAPIError
 from tests import UnitTestCase
 from tests.mock import CompanyModel, PersonModel, PersonSchema
 
@@ -12,84 +14,170 @@ class SortTestCase(UnitTestCase):
         self.view = PersonSchema
         self.query = PersonModel.query
 
+
+class SQLAlchemySortTestCase(SortTestCase):
+    """Test sorting with the SQLAlchemy driver."""
+
     def test_sort_field_ascending(self):
-        """Test sorting a result set in ascending order by the name
-        column.
-        """
+        """Test sorting a field in ascending order."""
         PersonModel.mock(name="A")
         PersonModel.mock(name="B")
 
-        values, errors = SortValue.generate(self.view, ['name'])
-        query = SortValue.sort_by(self.model.query, values)
+        parameters = {'sort': 'name'}
+        query = Resource(self.model, parameters).sort_query(self.query)
 
-        self.assertTrue(errors == [])
         result = query.all()
         self.assertEqual(result[0].name, 'A')
 
     def test_sort_field_descending(self):
-        """Test sorting a result set in descending order by the name
-        column.
-        """
+        """Test sorting a field in descending order."""
         PersonModel.mock(name="A")
         PersonModel.mock(name="B")
 
-        values, errors = SortValue.generate(self.view, ['-name'])
-        query = SortValue.sort_by(self.model.query, values)
+        parameters = {'sort': '-name'}
+        query = Resource(self.model, parameters).sort_query(self.query)
 
-        self.assertTrue(errors == [])
         result = query.all()
         self.assertEqual(result[0].name, 'B')
 
     def test_sort_relationship_ascending(self):
-        """Test sorting a result set in ascending order by the
-        companies column.
-        """
-        a = CompanyModel.mock(name="A")
-        b = CompanyModel.mock(name="B")
-
+        """Test sorting a relationhip's field in descending order."""
+        a = CompanyModel.mock(name="Last")
+        b = CompanyModel.mock(name="First")
         PersonModel.mock(name="A", companies=[a])
         PersonModel.mock(name="B", companies=[b])
 
-        values, errors = SortValue.generate(self.view, ['companies.name'])
-        query = SortValue.sort_by(self.model.query, values)
+        parameters = {'sort': 'companies.name'}
+        query = Resource(self.model, parameters).sort_query(self.query)
 
-        self.assertTrue(errors == [])
+        result = query.all()
+        self.assertEqual(result[0].companies[0].name, 'First')
+
+    def test_sort_relationship_descending(self):
+        """Test sorting a relationhip's field in descending order."""
+        a = CompanyModel.mock(name="Last")
+        b = CompanyModel.mock(name="First")
+        PersonModel.mock(name="A", companies=[a])
+        PersonModel.mock(name="B", companies=[b])
+
+        parameters = {'sort': '-companies.name'}
+        query = Resource(self.model, parameters).sort_query(self.query)
+
+        result = query.all()
+        self.assertEqual(result[0].companies[0].name, 'Last')
+
+    def test_sort_invalid_field(self):
+        """Test sorting against non-existant attribute."""
+        PersonModel.mock()
+
+        try:
+            parameters = {'sort': 'x'}
+            Resource(self.model, parameters).sort_query(self.query)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'sort')
+            self.assertIn('detail', message['errors'][0])
+
+    def test_sort_invalid_relationship(self):
+        """Test sorting against non-existant relationship attribute."""
+        PersonModel.mock()
+
+        try:
+            parameters = {'sort': 'companies.x'}
+            Resource(self.model, parameters).sort_query(self.query)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'sort')
+            self.assertIn('detail', message['errors'][0])
+
+
+class MarshmallowSortTestCase(SortTestCase):
+    """Test sorting with the marshmallow driver."""
+
+    def test_sort_field_ascending(self):
+        """Test sorting a field in ascending order."""
+        PersonModel.mock(name="A")
+        PersonModel.mock(name="B")
+
+        parameters = {'sort': 'name'}
+        query = Resource(
+            self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
+            sort_query(self.query)
+
         result = query.all()
         self.assertEqual(result[0].name, 'A')
 
-    def test_sort_relationship_descending(self):
-        """Test sorting a result set in descending order by the
-        companies column.
-        """
-        a = CompanyModel.mock(name="A")
-        b = CompanyModel.mock(name="B")
+    def test_sort_field_descending(self):
+        """Test sorting a field in descending order."""
+        PersonModel.mock(name="A")
+        PersonModel.mock(name="B")
 
-        PersonModel.mock(name="A", companies=[a])
-        PersonModel.mock(name="B", companies=[b])
+        parameters = {'sort': '-name'}
+        query = Resource(
+            self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
+            sort_query(self.query)
 
-        values, errors = SortValue.generate(self.view, ['-companies.name'])
-        query = SortValue.sort_by(self.model.query, values)
-
-        self.assertTrue(errors == [])
         result = query.all()
         self.assertEqual(result[0].name, 'B')
 
+    def test_sort_relationship_ascending(self):
+        """Test sorting a relationhip's field in descending order."""
+        a = CompanyModel.mock(name="Last")
+        b = CompanyModel.mock(name="First")
+        PersonModel.mock(name="A", companies=[a])
+        PersonModel.mock(name="B", companies=[b])
+
+        parameters = {'sort': 'companies.name'}
+        query = Resource(
+            self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
+            sort_query(self.query)
+
+        result = query.all()
+        self.assertEqual(result[0].companies[0].name, 'First')
+
+    def test_sort_relationship_descending(self):
+        """Test sorting a relationhip's field in descending order."""
+        a = CompanyModel.mock(name="Last")
+        b = CompanyModel.mock(name="First")
+        PersonModel.mock(name="A", companies=[a])
+        PersonModel.mock(name="B", companies=[b])
+
+        parameters = {'sort': '-companies.name'}
+        query = Resource(
+            self.model, parameters, marshmallow.MarshmallowDriver, self.view).\
+            sort_query(self.query)
+
+        result = query.all()
+        self.assertEqual(result[0].companies[0].name, 'Last')
+
     def test_sort_invalid_field(self):
-        """Test detecting and raising an error in response to an
-        invalid column name.
-        """
+        """Test sorting against non-existant attribute."""
         PersonModel.mock()
 
-        values, errors = SortValue.generate(self.view, ['-x'])
-        self.assertTrue(len(errors) == 1)
-        self.assertTrue(values == [])
+        try:
+            parameters = {'sort': 'x'}
+            Resource(
+                self.model, parameters, marshmallow.MarshmallowDriver,
+                self.view).sort_query(self.query)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'sort')
+            self.assertIn('detail', message['errors'][0])
 
     def test_sort_invalid_relationship(self):
-        """Test detecting and raising an error in response to an
-        invalid relationship attribute name.
-        """
+        """Test sorting against non-existant relationship attribute."""
         PersonModel.mock()
 
-        values, errors = SortValue.generate(self.view, ['companies.x'])
-        self.assertTrue(len(errors) == 1)
-        self.assertTrue(values == [])
+        try:
+            parameters = {'sort': 'companies.x'}
+            Resource(
+                self.model, parameters, marshmallow.MarshmallowDriver,
+                self.view).sort_query(self.query)
+        except JSONAPIError as exc:
+            message = exc.message
+            self.assertTrue(
+                message['errors'][0]['source']['parameter'] == 'sort')
+            self.assertIn('detail', message['errors'][0])

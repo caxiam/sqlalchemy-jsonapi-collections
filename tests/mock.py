@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from sqlalchemy import case, orm
-from marshmallow import class_registry
+from marshmallow import class_registry, validate
 from marshmallow.base import SchemaABC
 from marshmallow_jsonapi import fields, Schema
 
@@ -31,6 +31,8 @@ class PersonModel(db.Model):
 
     companies = db.relationship(
         'CompanyModel', secondary=person_company, backref='persons')
+    employee = db.relationship(
+        'EmployeeModel', uselist=False, back_populates='person')
 
     @classmethod
     def mock(cls, **kwargs):
@@ -57,7 +59,7 @@ class EmployeeModel(db.Model):
     is_manager = db.Column(db.Boolean)
     created_at = db.Column(db.DateTime, default=datetime.now())
 
-    person = db.relationship('PersonModel', backref='employee')
+    person = db.relationship('PersonModel', back_populates='employee')
 
     @classmethod
     def mock(cls, **kwargs):
@@ -124,8 +126,7 @@ class EmployeeSchema(Schema):
     is_manager = fields.Boolean()
     created_at = fields.DateTime()
 
-    person = SchemaRelationship(
-        attribute='person_id', related_schema='PersonSchema')
+    person = SchemaRelationship(related_schema='PersonSchema')
     person_id = SchemaRelationship()
 
     class Meta:
@@ -152,13 +153,14 @@ class PersonSchema(Schema):
     name = fields.String()
     age = fields.Integer()
     is_employed = fields.Boolean()
-    gender = fields.String()
+    gender = fields.String(validate=validate.OneOf(['male', 'female']))
     rate = fields.Decimal(as_string=True, places=2)
     employed_integer = fields.Integer()
-    created_at = fields.DateTime()
+    created_at = fields.DateTime(format='%Y-%m-%d')
 
     companies = SchemaRelationship(many=True, related_schema=CompanySchema)
     employee = SchemaRelationship(many=False, related_schema=EmployeeSchema)
+    employee_id = SchemaRelationship(many=False, related_schema=EmployeeSchema)
 
     class Meta:
         model = PersonModel
