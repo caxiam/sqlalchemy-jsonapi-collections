@@ -109,4 +109,4 @@ http://jsonapi.org/
 =======
 License
 =======
-MIT
+Apache Version 2.0
