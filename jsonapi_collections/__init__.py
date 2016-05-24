@@ -25,7 +25,7 @@ class Resource(object):
     ERRORS = {
         'field': 'Invalid field specified: {}.',
         'parameter': 'Invalid parameter specified: {}.',
-        'value': 'Invalid parameter value specified: {}.'
+        'value': 'Invalid parameter value specified for {}.'
     }
 
     def __init__(self, model, parameters, driver=None, schema=None):
@@ -97,8 +97,8 @@ class Resource(object):
 
     def paginate_query(self, query):
         """Paginate and retrieve a list of models."""
-        params = self.parameters
-        return query.limit(params['limit']).offset(params['offset'])
+        page = self.parameters['page']
+        return query.limit(page['limit']).offset(page['offset'])
 
     def compound_response(self, models):
         """Compound a response object.
@@ -172,22 +172,29 @@ class Resource(object):
     def _get_pagination_parameters(self, parameters):
         """Return a dictionary of parameter, value pairs to paginate by."""
         errors = []
-        page = {'offset': 0, 'limit': 100}
-        for key, value in parameters.iteritems():
-            if key.startswith('page[') or key == 'limit' or key == 'offset':
-                if not value.isdigit():
-                    errors.append({
-                        'detail': self.ERRORS['value'].format(key),
-                        'source': {'parameter': key}
-                    })
-                    continue
+        pagination_parameters = {}
 
+        limits = ['limit', 'page[size]', 'page[limit]']
+        offsets = ['offset', 'page[number]', 'page[offset]']
+        for key, value in parameters.iteritems():
+            if key not in limits and key not in offsets:
+                continue
+            try:
+                pagination_parameters[key] = int(value)
+            except ValueError:
+                errors.append({
+                    'detail': self.ERRORS['value'].format(key),
+                    'source': {'parameter': key}
+                })
+
+        page = {'limit': 100, 'offset': 0}
+        for key, value in pagination_parameters.iteritems():
             if key == 'page[limit]' or key == 'limit' or key == 'page[size]':
-                page['limit'] == value
+                page['limit'] = value
             elif key == 'page[offset]' or key == 'offset':
-                page['offset'] == value
+                page['offset'] = value
             elif key == 'page[number]':
-                page['offset'] == value * parameters.get('page[size]', 0)
+                page['offset'] = value * parameters.get('page[size]', 0)
         return page, errors
 
     def _get_included_parameters(self, parameters):
