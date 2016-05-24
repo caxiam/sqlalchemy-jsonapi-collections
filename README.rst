@@ -6,9 +6,11 @@ sqlalchemy-jsonapi-collections
 .. image:: https://circleci.com/gh/caxiam/sqlalchemy-jsonapi-collections.svg?style=shield&circle-token=c2672a37e539b7cedb010c358cdb3d48eb781dbe
     :target: https://circleci.com/gh/caxiam/sqlalchemy-jsonapi-collections
 .. image:: https://codeclimate.com/github/caxiam/sqlalchemy-jsonapi-collections/badges/gpa.svg
-   :target: https://codeclimate.com/github/caxiam/sqlalchemy-jsonapi-collections
-   :alt: Code Climate
-.. image:: https://coveralls.io/repos/github/caxiam/sqlalchemy-jsonapi-collections/badge.svg?branch=master :target: https://coveralls.io/github/caxiam/sqlalchemy-jsonapi-collections?branch=master
+    :target: https://codeclimate.com/github/caxiam/sqlalchemy-jsonapi-collections
+    :alt: Code Climate
+.. image:: https://coveralls.io/repos/github/caxiam/sqlalchemy-jsonapi-collections/badge.svg?branch=master
+    :target: https://coveralls.io/github/caxiam/sqlalchemy-jsonapi-collections?branch=master
+    :alt: Code Coverage
 
 A JSONAPI URL parameter handling library.
 
