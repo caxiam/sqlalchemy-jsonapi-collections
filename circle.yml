@@ -1,0 +1,10 @@
+# circle.yml
+machine:
+  python:
+    version: 2.7.3
+  services:
+    - docker
+
+test:
+  override:
+     - nosetests -w tests/
