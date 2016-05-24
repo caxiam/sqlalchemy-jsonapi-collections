@@ -47,7 +47,7 @@ class SQLAlchemyDriver(BaseDriver):
         """
         field = getattr(schema or self.collection.model, field_name, None)
         if field is None:
-            raise FieldError('Invalid field specified.')
+            raise FieldError('Invalid field specified: {}.'.format(field_name))
         return field
 
     def get_related_schema(self, field):
@@ -85,7 +85,7 @@ class SQLAlchemyDriver(BaseDriver):
         """Dangerously serialize `SQLAlchemy` model instance."""
         return [json.dumps(item, cls=UnsafeEncoder) for item in items]
 
-    def validate_path(self, path):
+    def validate_attribute_path(self, path):
         """Return `False` if the provided path cannot be found."""
         fields = path.split('.')
         length = len(fields)
@@ -95,7 +95,24 @@ class SQLAlchemyDriver(BaseDriver):
                 field = self.get_field(field, model)
             except FieldError:
                 return False
-            if pos != length and not self.is_relationship(field):
+            if pos != length:
+                if not self.is_relationship(field):
+                    return False
+                model = field.property.mapper.class_
+            if pos == length and self.is_relationship(field):
+                return False
+        return True
+
+    def validate_relationship_path(self, path):
+        """Return `False` if the path cannot be found."""
+        model = None
+        for field in path.split('.'):
+            try:
+                field = self.get_field(field, model)
+            except FieldError:
+                return False
+
+            if not self.is_relationship(field):
                 return False
             model = field.property.mapper.class_
         return True

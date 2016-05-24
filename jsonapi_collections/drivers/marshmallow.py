@@ -43,18 +43,40 @@ class MarshmallowDriver(BaseDriver):
     def serialize(self, schema, items):
         return schema(many=True).dump(items).data.get('data', [])
 
-    def validate_path(self, path):
+    def validate_attribute_path(self, path):
         """Return `False` if the provided path cannot be found."""
         fields = path.split('.')
         length = len(fields)
+
         model = None
+        schema = None
         for pos, field in enumerate(fields, 1):
             try:
-                name = self.get_column_name(field)
-                column = self.get_column(name, model)
-            except (FieldError, AttributeError):
+                column_name = self.get_column_name(field, schema)
+                column = self.get_column(column_name, model)
+            except FieldError:
                 return False
-            if pos != length and not self.is_relationship(column):
+
+            if pos != length:
+                if not self.is_relationship(column):
+                    return False
+                model = column.property.mapper.class_
+            if pos == length and self.is_relationship(column):
                 return False
-            model = column.property.mapper.class_
+        return True
+
+    def validate_relationship_path(self, path):
+        """Return `False` if the path cannot be found."""
+        model = None
+        schema = None
+        for field in path.split('.'):
+            try:
+                column_name = self.get_column_name(field, schema)
+                column = self.get_column(column_name, model)
+            except FieldError:
+                return False
+
+            if not self.is_relationship(column):
+                return False
+            model = self.get_column_model(column)
         return True

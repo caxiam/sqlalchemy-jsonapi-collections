@@ -69,6 +69,10 @@ class BaseDriver(object):
         """Serialize a set of SQLAlchemy instances."""
         raise NotImplementedError
 
-    def validate_path(self, path):
-        """Validate a given field path."""
+    def validate_attribute_path(self, path):
+        """Return `False` if the last member is not a valid attribute."""
+        raise NotImplementedError
+
+    def validate_relationship_path(self, path):
+        """Return `False` if all members are not valid relationships."""
         raise NotImplementedError
