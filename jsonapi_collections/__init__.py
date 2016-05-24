@@ -22,6 +22,12 @@ class Resource(object):
     methods will be a permutated query object.
     """
 
+    ERRORS = {
+        'field': 'Invalid field specified: {}.',
+        'parameter': 'Invalid parameter specified: {}.',
+        'value': 'Invalid parameter value specified: {}.'
+    }
+
     def __init__(self, model, parameters, driver=None, schema=None):
         """Initialize the collection controller.
 
@@ -89,9 +95,10 @@ class Resource(object):
             raise JSONAPIError([error])
         return SortValue.sort_by(query, sorts)
 
-    def paginated_response(self, query):
+    def paginate_query(self, query):
         """Paginate and retrieve a list of models."""
-        pass
+        params = self.parameters
+        return query.limit(params['limit']).offset(params['offset'])
 
     def compound_response(self, models):
         """Compound a response object.
@@ -112,10 +119,24 @@ class Resource(object):
 
     def _handle_parameters(self, parameters):
         """Return a formatted JSONAPI parameters object."""
+        errors = []
+
+        filters, err = self._get_filtered_fields(parameters)
+        errors.extend(err)
+
+        include, err = self._get_parameter_values('include', parameters)
+        errors.extend(err)
+
+        sort, err = self._get_parameter_values('sort', parameters)
+        errors.extend(err)
+
+        page, err = self._get_pagination_parameters(parameters)
+        errors.extend(err)
+
+        if errors:
+            raise JSONAPIError(errors)
         return {
-            'filters': self._get_filtered_fields(parameters),
-            'include': self._get_parameter_values('include', parameters),
-            'sort': self._get_parameter_values('sort', parameters),
+            'filters': filters, 'include': include, 'sort': sort, 'page': page
         }
 
     def _get_filtered_fields(self, parameters):
@@ -128,20 +149,46 @@ class Resource(object):
 
         :param parameters: A dictionary of parameters specified during init.
         """
+        errors = []
         filters = {}
         for key, value in parameters.iteritems():
             if not key.startswith('filter['):
                 continue
+
+            if not self.driver.validate_path(key):
+                errors.append({
+                    'details': self.ERRORS['parameter'].format(key),
+                    'source': {'parameter': key}
+                })
+                continue
+
             if value == '':
                 value = None
             else:
                 value = value.split(',')
             filters[key[7:-1]] = value
-        return filters
+        return filters, errors
 
     def _get_pagination_parameters(self, parameters):
         """Return a dictionary of parameter, value pairs to paginate by."""
-        pass
+        errors = []
+        page = {'offset': 0, 'limit': 100}
+        for key, value in parameters.iteritems():
+            if key.startswith('page[') or key == 'limit' or key == 'offset':
+                if not value.isdigit():
+                    errors.append({
+                        'details': self.ERRORS['value'].format(key),
+                        'source': {'parameter': key}
+                    })
+                    continue
+
+            if key == 'page[limit]' or key == 'limit' or key == 'page[size]':
+                page['limit'] == value
+            elif key == 'page[offset]' or key == 'offset':
+                page['offset'] == value
+            elif key == 'page[number]':
+                page['offset'] == value * parameters.get('page[size]', 0)
+        return page, errors
 
     def _get_parameter_values(self, key, parameters):
         """Return a list of field names.
@@ -155,4 +202,13 @@ class Resource(object):
         key = parameters.get(key, '')
         if key == '':
             return []
-        return key.split(',')
+
+        errors = []
+        fields = key.split(',')
+        for field in fields:
+            if not self.driver.validate_path(field):
+                errors.append({
+                    'details': self.ERRORS['field'].format(field),
+                    'source': {'parameter': key}
+                })
+        return fields, errors
