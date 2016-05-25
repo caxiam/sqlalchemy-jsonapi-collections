@@ -168,3 +168,21 @@ class PaginationTestCase(UnitTestCase):
             elif key == 'prev':
                 self.assertTrue(offset == '45')
             self.assertTrue(value['page[limit]'][0] == '5')
+
+    def test_get_blank_pagination_links(self):
+        """Test retrieving the pagination links object with no query."""
+        links = Resource(self.model, {}).get_pagination_links('google.co', 500)
+        for key, value in links.iteritems():
+            value = parse_qs(urlparse(value).query)
+            offset = value['page[offset]'][0]
+            if key == 'self':
+                self.assertTrue(offset == '0')
+            elif key == 'first':
+                self.assertTrue(offset == '0')
+            elif key == 'last':
+                self.assertTrue(offset == '400')
+            elif key == 'next':
+                self.assertTrue(offset == '100')
+            elif key == 'prev':
+                self.assertTrue(offset == '0')
+            self.assertTrue(value['page[limit]'][0] == '100')
