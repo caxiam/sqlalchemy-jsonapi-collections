@@ -100,6 +100,11 @@ class Resource(object):
         page = self.parameters['page']
         return query.limit(page['limit']).offset(page['offset'])
 
+    def get_pagination_values(self):
+        """Return the limit and offset values."""
+        page = self.parameters['page']
+        return page['limit'], page['offset']
+
     def compound_response(self, models):
         """Compound a response object.
 
@@ -180,6 +185,8 @@ class Resource(object):
             if key not in limits and key not in offsets:
                 continue
             try:
+                if not value:
+                    continue
                 pagination_parameters[key] = int(value)
             except ValueError:
                 errors.append({
