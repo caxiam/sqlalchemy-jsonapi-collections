@@ -3,6 +3,7 @@ from jsonapi_collections.drivers.sqlalchemy import SQLAlchemyDriver
 from jsonapi_collections.errors import JSONAPIError
 from jsonapi_collections.filter import FilterParameter
 from jsonapi_collections.include import IncludeValue
+from jsonapi_collections.page import Pagination
 from jsonapi_collections.sort import SortValue
 
 
@@ -98,12 +99,17 @@ class Resource(object):
     def paginate_query(self, query):
         """Paginate and retrieve a list of models."""
         page = self.parameters['page']
-        return query.limit(page['limit']).offset(page['offset'])
+        return page.paginate_query(query)
+
+    def get_pagination_links(self, base_url, total):
+        """Return a pagination links object."""
+        page = self.parameters['page']
+        return page.get_links_object(base_url, total)
 
     def get_pagination_values(self):
         """Return the limit and offset values."""
         page = self.parameters['page']
-        return page['limit'], page['offset']
+        return page.get_pagination_values()
 
     def compound_response(self, models):
         """Compound a response object.
@@ -176,33 +182,11 @@ class Resource(object):
 
     def _get_pagination_parameters(self, parameters):
         """Return a dictionary of parameter, value pairs to paginate by."""
-        errors = []
-        pagination_parameters = {}
-
-        limits = ['limit', 'page[size]', 'page[limit]']
-        offsets = ['offset', 'page[number]', 'page[offset]']
-        for key, value in parameters.iteritems():
-            if key not in limits and key not in offsets:
-                continue
-            try:
-                if not value:
-                    continue
-                pagination_parameters[key] = int(value)
-            except ValueError:
-                errors.append({
-                    'detail': self.ERRORS['value'].format(key),
-                    'source': {'parameter': key}
-                })
-
-        page = {'limit': 100, 'offset': 0}
-        for key, value in pagination_parameters.iteritems():
-            if key == 'page[limit]' or key == 'limit' or key == 'page[size]':
-                page['limit'] = value
-            elif key == 'page[offset]' or key == 'offset':
-                page['offset'] = value
-            elif key == 'page[number]':
-                page['offset'] = value * parameters.get('page[size]', 0)
-        return page, errors
+        page = Pagination(parameters)
+        errors = page.validate_parameters()
+        if errors:
+            return None, errors
+        return page.set_pagination_values(), errors
 
     def _get_included_parameters(self, parameters):
         """Return a list of field names.
