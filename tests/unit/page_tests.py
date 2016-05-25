@@ -59,6 +59,20 @@ class SQLAlchemyPaginationTestCase(PaginationTestCase):
         self.assertEqual(len(result), 1)
         self.assertTrue(result[0].name == 'First')
 
+    def test_blank_limit_values(self):
+        """Test defaulting blank limit values."""
+        parameters = {'page[limit]': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
+        parameters = {'page[size]': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
+        parameters = {'limit': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
     def test_page_offset(self):
         """Test offsetting a page by the page[offset] parameter."""
         PersonModel.mock(name='First')
@@ -94,6 +108,20 @@ class SQLAlchemyPaginationTestCase(PaginationTestCase):
         result = query.all()
         self.assertEqual(len(result), 1)
         self.assertTrue(result[0].name == 'Second')
+
+    def test_blank_offset_values(self):
+        """Test defaulting blank offset values."""
+        parameters = {'page[offset]': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
+
+        parameters = {'page[number]': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
+
+        parameters = {'offset': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
 
 
 class MarshmallowPaginationTestCase(PaginationTestCase):
@@ -141,6 +169,20 @@ class MarshmallowPaginationTestCase(PaginationTestCase):
         self.assertEqual(len(result), 1)
         self.assertTrue(result[0].name == 'First')
 
+    def test_blank_limit_values(self):
+        """Test defaulting blank limit values."""
+        parameters = {'page[limit]': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
+        parameters = {'page[size]': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
+        parameters = {'limit': ''}
+        limit, _ = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(limit == 100)
+
     def test_page_offset(self):
         """Test offsetting a page by the page[offset] parameter."""
         PersonModel.mock(name='First')
@@ -182,3 +224,17 @@ class MarshmallowPaginationTestCase(PaginationTestCase):
         result = query.all()
         self.assertEqual(len(result), 1)
         self.assertTrue(result[0].name == 'Second')
+
+    def test_blank_offset_values(self):
+        """Test defaulting blank offset values."""
+        parameters = {'page[offset]': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
+
+        parameters = {'page[number]': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
+
+        parameters = {'offset': ''}
+        _, offset = Resource(self.model, parameters).get_pagination_values()
+        self.assertTrue(offset == 0)
