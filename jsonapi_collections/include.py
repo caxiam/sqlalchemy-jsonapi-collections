@@ -22,9 +22,9 @@ class IncludeValue(object):
 
     def __call__(self, model):
         """Return the serailized output of a related field."""
-        values, schema = self._get_included_values(
+        data = self._get_included_values(
             self.field_name.split('.'), self.driver.collection.schema, [model])
-        return self.driver.serialize(schema, values)
+        return data
 
     def _get_included_values(self, path, schema, values):
         """Return a set of model instances and a related serializer.
@@ -33,12 +33,14 @@ class IncludeValue(object):
         :param schema: Serializer class object.
         :param values: List of `SQLAlchemy` model instances.
         """
+        data = []
         for field_name in path:
             column_name = self.driver.get_column_name(field_name, schema)
             values = self._get_nested_values(values, column_name)
             field = self.driver.get_field(field_name, schema)
             schema = self.driver.get_related_schema(field)
-        return values, schema
+            data.extend(self.driver.serialize(schema, values))
+        return data
 
     def _get_nested_values(self, values, name):
         """Return a set of `SQLAlchemy` model instances.
