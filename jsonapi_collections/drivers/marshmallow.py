@@ -43,7 +43,7 @@ class MarshmallowDriver(BaseDriver):
     def serialize(self, schema, items):
         return schema(many=True).dump(items).data.get('data', [])
 
-    def validate_attribute_path(self, path):
+    def validate_path(self, path):
         """Return `False` if the provided path cannot be found."""
         fields = path.split('.')
         length = len(fields)
@@ -63,8 +63,6 @@ class MarshmallowDriver(BaseDriver):
                 model = self.get_column_model(column)
                 field = self.get_field(field, schema)
                 schema = self.get_related_schema(field)
-            if pos == length and self.is_relationship(column):
-                return False
         return True
 
     def validate_relationship_path(self, path):

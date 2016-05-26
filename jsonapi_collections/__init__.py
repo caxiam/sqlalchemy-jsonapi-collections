@@ -166,7 +166,7 @@ class Resource(object):
             if not key.startswith('filter['):
                 continue
 
-            if not self.driver.validate_attribute_path(key[7:-1]):
+            if not self.driver.validate_path(key[7:-1]):
                 errors.append({
                     'detail': self.ERRORS['parameter'].format(key),
                     'source': {'parameter': key}
@@ -228,7 +228,7 @@ class Resource(object):
         fields = fields.split(',')
         for field in fields:
             validated_field = field[1:] if field.startswith('-') else field
-            if not self.driver.validate_attribute_path(validated_field):
+            if not self.driver.validate_path(validated_field):
                 errors.append({
                     'detail': self.ERRORS['field'].format(field),
                     'source': {'parameter': 'sort'}
