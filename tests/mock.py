@@ -126,8 +126,9 @@ class EmployeeSchema(Schema):
     is_manager = fields.Boolean()
     created_at = fields.DateTime()
 
-    person = SchemaRelationship(related_schema='PersonSchema')
-    person_id = SchemaRelationship()
+    person = SchemaRelationship(
+        include_data=True, type_='people', related_schema='PersonSchema')
+    person_id = SchemaRelationship(include_data=True, type_='people')
 
     class Meta:
         model = EmployeeModel
@@ -158,8 +159,12 @@ class PersonSchema(Schema):
     employed_integer = fields.Integer()
     created_at = fields.DateTime(format='%Y-%m-%d')
 
-    companies = SchemaRelationship(many=True, related_schema=CompanySchema)
-    employee = SchemaRelationship(many=False, related_schema=EmployeeSchema)
+    companies = SchemaRelationship(
+        include_data=True, type_='companies', many=True,
+        related_schema=CompanySchema)
+    employee = SchemaRelationship(
+        include_data=True, type_='employees', many=False,
+        related_schema=EmployeeSchema)
     employee_id = SchemaRelationship(many=False, related_schema=EmployeeSchema)
 
     class Meta:
