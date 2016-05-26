@@ -8,7 +8,6 @@ from jsonapi_collections.errors import FieldError
 import json
 
 
-
 class UnsafeEncoder(json.JSONEncoder):
     """Do not use an encoder like this in production.  You need to have
     your own specialized security concious encoder.

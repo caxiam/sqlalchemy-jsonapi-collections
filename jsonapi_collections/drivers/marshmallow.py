@@ -78,5 +78,8 @@ class MarshmallowDriver(BaseDriver):
 
             if not self.is_relationship(column):
                 return False
+
             model = self.get_column_model(column)
+            field = self.get_field(field, schema)
+            schema = self.get_related_schema(field)
         return True
