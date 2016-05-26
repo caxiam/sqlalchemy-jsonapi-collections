@@ -60,7 +60,9 @@ class MarshmallowDriver(BaseDriver):
             if pos != length:
                 if not self.is_relationship(column):
                     return False
-                model = column.property.mapper.class_
+                model = self.get_column_model(column)
+                field = self.get_field(field, schema)
+                schema = self.get_related_schema(field)
             if pos == length and self.is_relationship(column):
                 return False
         return True
