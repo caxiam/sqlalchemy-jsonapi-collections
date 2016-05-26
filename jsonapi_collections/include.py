@@ -59,7 +59,7 @@ class IncludeValue(object):
         """
         new_values = []
         for value in values:
-            relationship = getattr(value, name)
+            relationship = self.driver.get_column(name, value)
             if relationship is None:
                 continue
             elif not isinstance(relationship, list):
