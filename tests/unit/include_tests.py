@@ -3,9 +3,7 @@ from jsonapi_collections import Resource
 from jsonapi_collections.drivers import marshmallow
 from jsonapi_collections.errors import JSONAPIError
 from tests import UnitTestCase
-from tests.mock import (
-    CompanyModel, EmployeeModel, EmployeeSchema, PersonModel, PersonSchema
-)
+from tests.mock import CompanyModel, EmployeeModel, PersonModel, PersonSchema
 
 
 class IncludeTestCase(UnitTestCase):

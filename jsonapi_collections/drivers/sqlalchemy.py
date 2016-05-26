@@ -44,10 +44,10 @@ class SQLAlchemyDriver(BaseDriver):
 
         :param field_name: A string reference to a field's name.
         """
-        field = getattr(schema or self.collection.model, field_name, None)
-        if field is None:
+        try:
+            return getattr(schema or self.collection.model, field_name)
+        except AttributeError:
             raise FieldError('Invalid field specified: {}.'.format(field_name))
-        return field
 
     def get_related_schema(self, field):
         """Return a related schema reference."""
