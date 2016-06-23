@@ -2,3 +2,4 @@
 *.pyc
 env/
 docs/_build
+__pycache__/
