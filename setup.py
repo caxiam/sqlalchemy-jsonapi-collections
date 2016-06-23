@@ -1,28 +1,25 @@
-"""Flask-SQLAlchemy-JSONAPI.
+"""jsonapi-query.
 
-A URL parsing library that uses documented JSONAPI 1.0 specification
-URL parameters to filter, sort, and include JSONAPI response objects.
+A JSONAPI compliant query library.
 """
 from setuptools import find_packages, setup
 
 
 setup(
-    name='Flask-SQLAlchemy-JSONAPI',
-    version='0.1',
+    name='jsonapi-query',
+    version='0.2',
     url='https://github.com/caxiam/sqlalchemy-jsonapi-collections',
     license='Apache Version 2.0',
     author='Colton Allen',
     author_email='colton.allen@caxiam.com',
-    description='A collection response filtering library.',
+    description='A JSONAPI compliant query library.',
     long_description=__doc__,
     packages=find_packages(exclude=("test*", )),
-    package_dir={'flask-sqlalchemy-jsonapi': 'flask-sqlalchemy-jsonapi'},
+    package_dir={'src': 'src'},
     zip_safe=False,
     include_package_data=True,
     platforms='any',
-    install_requires=[
-        'Flask', 'SQLAlchemy', 'marshmallow', 'marshmallow-jsonapi'
-    ],
+    install_requires=[],
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
