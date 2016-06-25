@@ -1,8 +1,8 @@
 """SQLAlchemy jsonapi-query adapter."""
-from sqlalchemy import or_
+from src.database import BaseQueryMixin
 
 
-class QueryMixin(object):
+class QueryMixin(BaseQueryMixin):
     """SQLAlchemy query class mixin."""
 
     default_limit = 50
@@ -29,30 +29,62 @@ class QueryMixin(object):
             strategy = strategy[1:]
 
         if strategy == 'in':
+            if negated:
+                return self.filter(~column.in_(values))
             return self.filter(column.in_(values))
 
-        expressions = []
+        if strategy == 'eq':
+            strategy = self._filter_eq
+        elif strategy == 'gt':
+            strategy = self._filter_gt
+        elif strategy == 'gte':
+            strategy = self._filter_gte
+        elif strategy == 'lt':
+            strategy = self._filter_lt
+        elif strategy == 'lte':
+            strategy = self._filter_lte
+        elif strategy == 'like':
+            strategy = self._filter_like
+        elif strategy == 'ilike':
+            strategy = self._filter_ilike
+        else:
+            raise ValueError('Invalid query strategy: {}'.format(strategy))
+
+        filters = self._get_filters(column, values, strategy, negated)
+        return self.filter(filters)
+
+    def _get_filters(self, column, values, strategy, negated=False):
+        filters = None
         for value in values:
-            if strategy == 'eq':
-                expression = column == value
-            elif strategy == 'gt':
-                expression = column > value
-            elif strategy == 'gte':
-                expression = column >= value
-            elif strategy == 'lt':
-                expression = column < value
-            elif strategy == 'lte':
-                expression = column <= value
-            elif strategy == 'like':
-                expression = column.contains(value)
-            elif strategy == 'ilike':
-                expression = column.ilike('%{}%'.format(value))
-            else:
-                raise ValueError('Invalid query strategy: {}'.format(strategy))
+            expression = strategy(column, value)
             if negated:
                 expression = ~expression
-            expressions.append(expression)
-        return self.filter(or_(*expressions))
+            if filters is None:
+                filters = expression
+            else:
+                filters = filters | expression
+        return filters
+
+    def _filter_eq(self, column, value):
+        return column == value
+
+    def _filter_gt(self, column, value):
+        return column > value
+
+    def _filter_gte(self, column, value):
+        return column >= value
+
+    def _filter_lt(self, column, value):
+        return column < value
+
+    def _filter_lte(self, column, value):
+        return column <= value
+
+    def _filter_like(self, column, value):
+        return column.contains(value)
+
+    def _filter_ilike(self, column, value):
+        return column.ilike('%{}%'.format(value))
 
     def apply_sorts(self, sorts):
         """Return a query object sorted by a set of columns.
