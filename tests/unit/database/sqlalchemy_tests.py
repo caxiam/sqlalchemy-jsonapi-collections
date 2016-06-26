@@ -1,55 +1,23 @@
 """."""
 from datetime import datetime
 
-from sqlalchemy import create_engine, event, ForeignKey
-from sqlalchemy import Column, Date, DateTime, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Query, sessionmaker, relationship
+from sqlalchemy.orm import Query, sessionmaker
 
 from src.database.sqlalchemy import QueryMixin
-from tests.unit import UnitTestCase
+from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 
 
-Base = declarative_base()
-
-
-class Person(Base):
-    __tablename__ = "person"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    age = Column(Integer)
-    birth_date = Column(Date)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-
-
-class Student(Base):
-    __tablename__ = "student"
-
-    id = Column(Integer, primary_key=True)
-    school_id = Column(Integer, ForeignKey('school.id'))
-    person_id = Column(Integer, ForeignKey('person.id'))
-
-    school = relationship('School', backref='student')
-    person = relationship('Person', backref='student')
-
-
-class School(Base):
-    __tablename__ = "school"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-
-class SQLAlchemyTestCase(UnitTestCase):
-    """Test custom query methods."""
+class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
+    """Base database SQLAlchemy test case for establishing mock environment."""
 
     def setUp(self):
-        """Create a save point and start the session."""
+        """Set the query class and create a set of rows to test against."""
+        super().setUp()
+
         class BaseQuery(QueryMixin, Query):
             pass
 
-        self.session = sessionmaker(bind=engine, query_cls=BaseQuery)()
+        self.session = sessionmaker(bind=self.engine, query_cls=BaseQuery)()
         self.session.begin_nested()
 
         date = datetime.strptime('2014-01-01', "%Y-%m-%d").date()
@@ -69,35 +37,9 @@ class SQLAlchemyTestCase(UnitTestCase):
         student = Student(school_id=1, person_id=2)
         self.session.add(student)
 
-    def tearDown(self):
-        """Close the session and rollback to the previous save point."""
-        self.session.rollback()
-        self.session.close()
 
-    @classmethod
-    def setUpClass(cls):
-        """Create the database."""
-        global engine
-
-        engine = create_engine('sqlite:///sqlalchemy.db')
-
-        @event.listens_for(engine, "connect")
-        def do_connect(dbapi_connection, connection_record):
-            dbapi_connection.isolation_level = None
-
-        @event.listens_for(engine, "begin")
-        def do_begin(conn):
-            conn.execute("BEGIN")
-
-        Base.metadata.create_all(engine)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Destroy the database."""
-        engine.dispose()
-
-
-class FilterSQLAlchemyTestCase(SQLAlchemyTestCase):
+class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+    """Test query filtering related methods."""
 
     def test_query_filter_strategy_eq(self):
         """Test filtering a query with the `eq` strategy."""
@@ -161,7 +103,8 @@ class FilterSQLAlchemyTestCase(SQLAlchemyTestCase):
         self.assertTrue(len(models) == 2)
 
 
-class SortSQLAlchemyTestCase(SQLAlchemyTestCase):
+class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+    """Test query sorting related methods."""
 
     def test_query_sort_attribute_ascending(self):
         """Test sorting a query by an ascending column."""
@@ -190,7 +133,8 @@ class SortSQLAlchemyTestCase(SQLAlchemyTestCase):
         self.assertTrue(models[1].person.name == 'Carl')
 
 
-class PaginateSQLAlchemyTestCase(SQLAlchemyTestCase):
+class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+    """Test query pagination related methods."""
 
     def test_query_paginate_limit(self):
         """Test limiting a query."""
