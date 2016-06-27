@@ -12,8 +12,8 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
 
     def replace_path(self, path):
         """Replace the provided view path with a model path."""
+        path = remove_inflection(path)
         stones = path.split('.')
-        stones = [remove_inflection(stone) for stone in stones]
         relationships, attribute = stones[:-1], stones[-1]
 
         path = ''
@@ -37,6 +37,7 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
 
     def deserialize_from_path(self, path, values):
         """Deserialize a set of values from the given path."""
+        path = remove_inflection(path)
         field = self._get_field_from_path(path)
         return self.deserialize_values(field, values)
 

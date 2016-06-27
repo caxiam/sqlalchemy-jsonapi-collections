@@ -1,4 +1,6 @@
 """."""
+from datetime import date
+
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
     MarshmallowJSONAPIDriver)
 from tests.marshmallow_jsonapi import BaseMarshmallowJSONAPITestCase, Person
@@ -25,6 +27,12 @@ class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
         """Test deserializing a list of values from a string path."""
         values = self.driver.deserialize_from_path('student.school.id', ['1'])
         self.assertTrue(values == [1])
+
+    def test_deserialize_dasherized_path(self):
+        """Test deserializing from a dasherized path."""
+        values = self.driver.deserialize_from_path(
+            'birth-date', ['2014-01-01'])
+        self.assertTrue(values == [date(2014, 1, 1)])
 
     def test_deserialize_values(self):
         """Test deserializing a list of values."""
