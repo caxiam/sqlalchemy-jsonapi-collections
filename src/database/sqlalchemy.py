@@ -13,16 +13,17 @@ class QueryMixin(BaseQueryMixin):
 
         :param filters: Triple of column, strategy, and values arguments.
         """
-        for column, strategy, values in filters:
-            self = self.apply_filter(column, strategy, values)
+        for column, strategy, values, joins in filters:
+            self = self.apply_filter(column, strategy, values, joins)
         return self
 
-    def apply_filter(self, column, strategy, values):
+    def apply_filter(self, column, strategy, values, joins=[]):
         """Return a query object filtered by a column, value pair.
 
         :param column: SQLAlchemy column object.
         :param strategy: Query filter string name reference.
         :param values: List of typed values.
+        :param joins: List of SQLAlchemy model objects.
         """
         negated = strategy.startswith('~')
         if negated:
@@ -51,6 +52,8 @@ class QueryMixin(BaseQueryMixin):
             raise ValueError('Invalid query strategy: {}'.format(strategy))
 
         filters = self._get_filters(column, values, strategy, negated)
+        for join in joins:
+            self = self.join(join)
         return self.filter(filters)
 
     def _get_filters(self, column, values, strategy, negated=False):
@@ -89,23 +92,23 @@ class QueryMixin(BaseQueryMixin):
     def apply_sorts(self, sorts):
         """Return a query object sorted by a set of columns.
 
-        :param sorts: Triple of direction, column, and table arguments.
+        :param sorts: Triple of direction, column, and joins arguments.
         """
-        for direction, column, table in sorts:
-            self.apply_sort(direction, column, table)
+        for direction, column, joins in sorts:
+            self = self.apply_sort(direction, column, joins)
         return self
 
-    def apply_sort(self, column, direction, table=None):
+    def apply_sort(self, column, direction, joins=[]):
         """Return a query object sorted by a column.
 
         :param column: SQLAlchemy column object.
         :param direction: Query sort direction reference.
-        :param table: String reference to SQLAlchemy table name.
+        :param join: List of SQLAlchemy model objects.
         """
         if direction == '-':
             column = column.desc()
-        if table is not None:
-            self = self.join(table)
+        for join in joins:
+            self = self.join(join)
         return self.order_by(column)
 
     def apply_paginators(self, paginators):
@@ -117,8 +120,28 @@ class QueryMixin(BaseQueryMixin):
             'limit': self.default_limit,
             'offset': self.default_offset
         }
-        pagination.update({strategy: value for strategy, value in paginators})
+        pagination.update({
+            strategy: int(value) for strategy, value in paginators})
         if 'number' in pagination:
             limit = pagination['limit']
             pagination['offset'] = pagination['number'] * limit - limit
         return self.limit(pagination['limit']).offset(pagination['offset'])
+
+
+def include(session, models, filter_model, ids):
+    """Query a list of models restricted by the filter_model's ID.
+
+    :param session: SQLAlchemy query session.
+    :param models: A list of SQLAlchemy model objects.
+    :param filter_model: SQLAlchemy model object.
+    :param ids: A list of IDs to filter by.
+    """
+    assert filter_model in models
+
+    query = session.query(*models).filter(filter_model.id.in_(ids))
+    if len(models) == 1:
+        return query.all()
+
+    for model in models[1:]:
+        query = query.join(model)
+    return query.all()
