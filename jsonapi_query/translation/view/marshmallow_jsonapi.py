@@ -2,12 +2,18 @@
 from jsonapi_query.translation.view import BaseViewDriver
 
 
+def remove_inflection(text):
+    """Replace hyphens with underscores."""
+    return text.replace('-', '_')
+
+
 class MarshmallowJSONAPIDriver(BaseViewDriver):
     """Schema translation handler."""
 
     def replace_path(self, path):
         """Replace the provided view path with a model path."""
         stones = path.split('.')
+        stones = [remove_inflection(stone) for stone in stones]
         relationships, attribute = stones[:-1], stones[-1]
 
         path = ''

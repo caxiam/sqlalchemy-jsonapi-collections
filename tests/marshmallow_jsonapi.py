@@ -7,6 +7,11 @@ from marshmallow_jsonapi import fields, Schema
 from tests.unit import UnitTestCase
 
 
+def dasherize(text):
+    """Replace underscores with hyphens."""
+    return text.replace('_', '-')
+
+
 class Relationship(fields.Relationship):
 
     def __init__(self, related_schema=None, **kwargs):
@@ -40,6 +45,7 @@ class Person(Schema):
     student = Relationship('Student')
 
     class Meta:
+        inflect = dasherize
         type_ = 'people'
 
 
@@ -49,6 +55,7 @@ class Student(Schema):
     person = Relationship('Person')
 
     class Meta:
+        inflect = dasherize
         type_ = 'students'
 
 
@@ -58,6 +65,7 @@ class School(Schema):
     students = Relationship('Student')
 
     class Meta:
+        inflect = dasherize
         type_ = 'schools'
 
 

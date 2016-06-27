@@ -16,6 +16,11 @@ class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
         path = self.driver.replace_path('student.school.title')
         self.assertTrue(path == 'student.school.name')
 
+    def test_replace_dasherized_path(self):
+        """Test replacing dasherized path with underscored model attribute."""
+        path = self.driver.replace_path('birth-date')
+        self.assertTrue(path == 'birth_date')
+
     def test_deserialize_from_path(self):
         """Test deserializing a list of values from a string path."""
         values = self.driver.deserialize_from_path('student.school.id', ['1'])
