@@ -15,7 +15,7 @@ setup(
     description='A JSONAPI compliant query library.',
     long_description=__doc__,
     packages=find_packages(exclude=("test*", )),
-    package_dir={'jsonapi_query': 'src'},
+    package_dir={'jsonapi-query': 'jsonapi-query'},
     zip_safe=False,
     include_package_data=True,
     platforms='any',
