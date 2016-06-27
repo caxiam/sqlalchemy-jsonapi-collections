@@ -30,7 +30,7 @@ def get_sorts(parameters: dict) -> list:
     for sort in parameters.get('sort', '').split(','):
         if sort.startswith('-') or sort.startswith('+'):
             sorts.append((sort[1:], sort[:1]))
-        else:
+        elif sort != '':
             sorts.append((sort, '+'))
     return sorts
 
