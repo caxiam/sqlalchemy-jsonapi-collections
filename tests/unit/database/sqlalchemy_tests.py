@@ -121,14 +121,14 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_sort_relationship_ascending(self):
         """Test sorting a query by an ascending relationship column."""
         models = self.session.query(
-            Student).apply_sort(Person.name, '+', 'person').all()
+            Student).apply_sort(Person.name, '+', [Person]).all()
         self.assertTrue(models[0].person.name == 'Carl')
         self.assertTrue(models[1].person.name == 'Fred')
 
     def test_query_sort_relationship_descending(self):
         """Test sorting a query by a descending relationship column."""
         models = self.session.query(
-            Student).apply_sort(Person.name, '-', 'person').all()
+            Student).apply_sort(Person.name, '-', [Person]).all()
         self.assertTrue(models[0].person.name == 'Fred')
         self.assertTrue(models[1].person.name == 'Carl')
 
