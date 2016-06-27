@@ -1,5 +1,5 @@
 """SQLAlchemy model driver module."""
-from src.translation.model.sqlalchemy import SQLAlchemyModelDriver
+from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
 from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 
 

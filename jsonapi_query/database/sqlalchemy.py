@@ -1,5 +1,5 @@
 """SQLAlchemy jsonapi-query adapter."""
-from src.database import BaseQueryMixin
+from jsonapi_query.database import BaseQueryMixin
 
 
 class QueryMixin(BaseQueryMixin):

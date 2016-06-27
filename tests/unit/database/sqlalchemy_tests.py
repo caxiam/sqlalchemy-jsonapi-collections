@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from src.database.sqlalchemy import QueryMixin
+from jsonapi_query.database.sqlalchemy import QueryMixin
 from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 
 

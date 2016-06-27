@@ -1,5 +1,5 @@
 """marshmallow-jsonapi schema translation module."""
-from src.translation.view import BaseViewDriver
+from jsonapi_query.translation.view import BaseViewDriver
 
 
 class MarshmallowJSONAPIDriver(BaseViewDriver):

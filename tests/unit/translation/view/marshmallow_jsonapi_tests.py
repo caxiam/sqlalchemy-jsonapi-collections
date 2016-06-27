@@ -1,5 +1,6 @@
 """."""
-from src.translation.view.marshmallow_jsonapi import MarshmallowJSONAPIDriver
+from jsonapi_query.translation.view.marshmallow_jsonapi import (
+    MarshmallowJSONAPIDriver)
 from tests.marshmallow_jsonapi import BaseMarshmallowJSONAPITestCase, Person
 
 

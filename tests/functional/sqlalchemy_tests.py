@@ -3,10 +3,11 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from src import url
-from src.database.sqlalchemy import QueryMixin
-from src.translation.model.sqlalchemy import SQLAlchemyModelDriver
-from src.translation.view.marshmallow_jsonapi import MarshmallowJSONAPIDriver
+from jsonapi_query import url
+from jsonapi_query.database.sqlalchemy import QueryMixin
+from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
+from jsonapi_query.translation.view.marshmallow_jsonapi import (
+    MarshmallowJSONAPIDriver)
 from tests.marshmallow_jsonapi import Person as PersonSchema
 from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 

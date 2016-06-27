@@ -1,5 +1,5 @@
 """SQLAlchemy model translation module."""
-from src.translation.model import BaseModelDriver
+from jsonapi_query.translation.model import BaseModelDriver
 
 
 class SQLAlchemyModelDriver(BaseModelDriver):

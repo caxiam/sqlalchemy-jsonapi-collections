@@ -1,4 +1,4 @@
-from src.url import (
+from jsonapi_query.url import (
     get_parameters, get_includes, get_sorts, get_filters, get_paginators)
 from tests.unit import UnitTestCase
 
