@@ -5,8 +5,7 @@ from sqlalchemy import create_engine, event, ForeignKey
 from sqlalchemy import Column, Date, DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-
-from tests.unit import UnitTestCase
+from unittest import TestCase
 
 
 Base = declarative_base()
@@ -46,7 +45,7 @@ class School(Base):
     name = Column(String)
 
 
-class BaseSQLAlchemyTestCase(UnitTestCase):
+class BaseSQLAlchemyTestCase(TestCase):
     """Base SQLAlchemy test case.
 
     For each unittest class, create a database, start a session, run
