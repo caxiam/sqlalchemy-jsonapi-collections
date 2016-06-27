@@ -1,4 +1,4 @@
-"""."""
+"""Test database interactions."""
 from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
