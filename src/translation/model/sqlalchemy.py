@@ -1,4 +1,4 @@
-"""SQLAlchemy translation module."""
+"""SQLAlchemy model translation module."""
 from src.translation.model import BaseModelDriver
 
 
@@ -18,7 +18,6 @@ class SQLAlchemyModelDriver(BaseModelDriver):
         relationships, attribute = stones[:-1], stones[-1]
 
         model = self.model
-        joins = []
         models = []
         for relationship in relationships:
             reference = getattr(model, relationship)
@@ -26,15 +25,13 @@ class SQLAlchemyModelDriver(BaseModelDriver):
                 raise TypeError('Invalid relationship specified.')
             model = self._get_relationship_class(reference)
             models.append(model)
-            joins.append(model.__tablename__)
 
         column = getattr(model, attribute)
         if self._is_relationship(column):
             model = self._get_relationship_class(column)
             models.append(model)
-            joins.append(model.__tablename__)
             column = getattr(model, self.default_attribute)
-        return (column, models, joins)
+        return (column, models)
 
     def _is_relationship(self, relationship):
         """Return `True` if a relationship mapper was specified."""
