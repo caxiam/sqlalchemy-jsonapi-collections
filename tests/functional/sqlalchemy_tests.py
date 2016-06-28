@@ -158,7 +158,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
                     unqiues.append(item)
             return unqiues
 
-        link = 'testsite.com/people?include=student.school'
+        link = 'testsite.com/people?include=student.school,student'
         params = url.get_parameters(link)
 
         includes = []
