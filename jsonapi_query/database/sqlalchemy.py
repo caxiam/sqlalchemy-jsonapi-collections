@@ -136,6 +136,9 @@ def include(session, model, columns, ids):
     :param filter_model: SQLAlchemy model object.
     :param ids: A list of IDs to filter by.
     """
+    if columns == [] or ids == []:
+        return []
+
     query = session.query(*columns).join(model).filter(model.id.in_(ids))
     if len(columns) > 1:
         for column in columns[1:]:

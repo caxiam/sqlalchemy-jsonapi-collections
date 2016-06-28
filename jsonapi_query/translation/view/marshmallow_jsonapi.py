@@ -21,6 +21,9 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
         self.schemas = []
 
         path = remove_inflection(path)
+        if path == '':
+            return self
+
         stones = path.split('.')
         relationships, attribute = stones[:-1], stones[-1]
 

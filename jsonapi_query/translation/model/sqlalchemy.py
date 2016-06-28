@@ -14,6 +14,9 @@ class SQLAlchemyModelDriver(BaseModelDriver):
         :param path: A dot seperated string representing the attributes
                      of a model class.
         """
+        if path == '':
+            return (None, [])
+
         stones = path.split('.')
         relationships, attribute = stones[:-1], stones[-1]
 
