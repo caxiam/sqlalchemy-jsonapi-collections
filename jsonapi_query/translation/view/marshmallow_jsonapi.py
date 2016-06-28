@@ -10,56 +10,52 @@ def remove_inflection(text):
 class MarshmallowJSONAPIDriver(BaseViewDriver):
     """Schema translation handler."""
 
-    def replace_path(self, path):
-        """Replace the provided view path with a model path."""
+    fields = []
+    field_names = []
+    schemas = []
+
+    def initialize_path(self, path):
+        """Initialize a specified attribute path."""
+        self.fields = []
+        self.field_names = []
+        self.schemas = []
+
         path = remove_inflection(path)
         stones = path.split('.')
         relationships, attribute = stones[:-1], stones[-1]
 
-        path = ''
         schema = self.view
-        for relationship in relationships:
-            field = self._get_field(relationship, schema)
+        for field_name in relationships:
+            field = self._get_field(field_name, schema)
             if not self._is_relationship(field):
                 raise TypeError('Invalid relationship field specified.')
-            name = field.attribute or relationship
-            if path:
-                path = '{}.{}'.format(path, name)
-            else:
-                path = name
+            self._append_field_meta(field, field_name)
+
             schema = field.schema
+            self.schemas.append(schema)
+
         field = self._get_field(attribute, schema)
-        if path:
-            path = '{}.{}'.format(path, field.attribute or attribute)
-        else:
-            path = field.attribute or attribute
-        return path
+        self._append_field_meta(field, attribute)
+        return self
 
-    def deserialize_from_path(self, path, values):
-        """Deserialize a set of values from the given path."""
-        path = remove_inflection(path)
-        field = self._get_field_from_path(path)
-        return self.deserialize_values(field, values)
+    def _append_field_meta(self, field, field_name):
+        self.fields.append(field)
+        self.field_names.append(field.attribute or field_name)
 
-    def deserialize_values(self, field, values):
+    def get_model_path(self):
+        """Return a model-safe path."""
+        return '.'.join(self.field_names)
+
+    def deserialize_values(self, values):
         """Deserialize a set of values into their appropriate types."""
         new = []
         for value in values:
-            new.append(self.deserialize_value(field, value))
+            new.append(self.deserialize_value(self.fields[-1], value))
         return new
 
     def deserialize_value(self, field, value):
         """Deserialize a string value to the appropriate type."""
         return field.deserialize(value)
-
-    def _get_field_from_path(self, path):
-        field = None
-        schema = self.view
-        for field_name in path.split('.'):
-            field = self._get_field(field_name, schema)
-            if self._is_relationship(field):
-                schema = field.schema
-        return field
 
     def _get_field(self, attribute, schema):
         return schema._declared_fields[attribute]
