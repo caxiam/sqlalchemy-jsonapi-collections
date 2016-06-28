@@ -1,6 +1,7 @@
+from abc import abstractmethod, ABCMeta
 
 
-class BaseModelDriver(object):
+class BaseModelDriver(metaclass=ABCMeta):
     """Base model driver."""
 
     def __init__(self, model, default_attribute='id'):
@@ -11,6 +12,7 @@ class BaseModelDriver(object):
         self.model = model
         self.default_attribute = default_attribute
 
+    @abstractmethod
     def parse_path(self, path):
         """Parse a string path to a column attribute."""
-        raise NotImplementedError
+        return

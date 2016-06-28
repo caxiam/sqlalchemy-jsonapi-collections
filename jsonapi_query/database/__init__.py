@@ -1,19 +1,25 @@
+from abc import abstractmethod, ABCMeta
 
 
-class BaseQueryMixin(object):
+class BaseQueryMixin(metaclass=ABCMeta):
     """Base query class mixin."""
 
+    @abstractmethod
     def apply_filters(self):
-        raise NotImplementedError
+        return
 
+    @abstractmethod
     def apply_filter(self):
-        raise NotImplementedError
+        return
 
+    @abstractmethod
     def apply_sorts(self):
-        raise NotImplementedError
+        return
 
+    @abstractmethod
     def apply_sort(self):
-        raise NotImplementedError
+        return
 
+    @abstractmethod
     def apply_paginators(self):
-        raise NotImplementedError
+        return
