@@ -52,8 +52,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         filters = []
         for fltr in url.get_filters(params):
-            path = self.v_driver.replace_path(fltr[0])
-            values = self.v_driver.deserialize_from_path(fltr[0], fltr[2])
+            self.v_driver.initialize_path(fltr[0])
+            path = self.v_driver.get_model_path()
+            values = self.v_driver.deserialize_values(fltr[2])
             filters.append((path, fltr[1], values))
 
         new = []
@@ -72,8 +73,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         filters = []
         for fltr in url.get_filters(params):
-            path = self.v_driver.replace_path(fltr[0])
-            values = self.v_driver.deserialize_from_path(fltr[0], fltr[2])
+            self.v_driver.initialize_path(fltr[0])
+            path = self.v_driver.get_model_path()
+            values = self.v_driver.deserialize_values(fltr[2])
             filters.append((path, fltr[1], values))
 
         new = []
@@ -92,7 +94,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         sorts = []
         for sort in url.get_sorts(params):
-            path = self.v_driver.replace_path(sort[0])
+            self.v_driver.initialize_path(sort[0])
+            path = self.v_driver.get_model_path()
             sorts.append((path, sort[1]))
 
         new = []
@@ -111,7 +114,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         sorts = []
         for sort in url.get_sorts(params):
-            path = self.v_driver.replace_path(sort[0])
+            self.v_driver.initialize_path(sort[0])
+            path = self.v_driver.get_model_path()
             sorts.append((path, sort[1]))
 
         new = []
