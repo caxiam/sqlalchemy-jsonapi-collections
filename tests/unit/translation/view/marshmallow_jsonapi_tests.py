@@ -1,4 +1,3 @@
-"""."""
 from datetime import date
 
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
@@ -8,7 +7,6 @@ from tests.marshmallow_jsonapi import (
 
 
 class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
-    """."""
 
     def setUp(self):
         super().setUp()

@@ -51,8 +51,10 @@ class Person(Schema):
 
 class Student(Schema):
     id = fields.Integer()
-    school = Relationship('School')
-    person = Relationship('Person')
+    school = Relationship(
+        'School', include_resource_linkage=True, type_='schools')
+    person = Relationship(
+        'Person', include_resource_linkage=True, type_='people')
 
     class Meta:
         inflect = dasherize

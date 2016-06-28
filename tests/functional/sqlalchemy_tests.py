@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapi_query import url
-from jsonapi_query.database.sqlalchemy import QueryMixin
+from jsonapi_query.database.sqlalchemy import include, QueryMixin
 from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
     MarshmallowJSONAPIDriver)
@@ -148,3 +148,42 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         models = self.session.query(Person).apply_paginators(paginators).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
+
+    def test_include_multiple_items(self):
+        """Test including a list of relationships."""
+        link = 'testsite.com/people?include=student.school'
+        params = url.get_parameters(link)
+
+        includes = []
+        schemas = []
+        for include_ in url.get_includes(params):
+            self.v_driver.initialize_path(include_)
+            includes.append(self.v_driver.get_model_path())
+            schemas.extend(self.v_driver.schemas)
+        schemas = list(set(schemas))
+
+        included_models = []
+        for include_ in includes:
+            _, models = self.m_driver.parse_path(include_)
+            included_models.extend(models)
+        included_models = list(set(included_models))
+
+        items = include(self.session, Person, included_models, [1])
+        included = []
+        for position, columns in enumerate(items):
+            schema = schemas[position]
+            included.extend(schema().dump(columns, many=True).data['data'])
+
+        self.assertTrue(len(schemas) == 2)
+        self.assertTrue(len(included_models) == 2)
+        self.assertTrue(len(items) == 2)
+        self.assertTrue(len(items[0]) == 1)
+        self.assertTrue(len(included) == 2)
+
+        self.assertIn('id', included[0])
+        self.assertIn('type', included[0])
+        self.assertIn('relationships', included[0])
+
+        self.assertIn('id', included[1])
+        self.assertIn('type', included[1])
+        self.assertIn('attributes', included[1])
