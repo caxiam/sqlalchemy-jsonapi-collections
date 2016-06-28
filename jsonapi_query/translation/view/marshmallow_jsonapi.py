@@ -35,6 +35,8 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
             self.schemas.append(schema)
 
         field = self._get_field(attribute, schema)
+        if self._is_relationship(field):
+            self.schemas.append(field.schema)
         self._append_field_meta(field, attribute)
         return self
 
