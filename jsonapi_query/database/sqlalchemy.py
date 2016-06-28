@@ -128,7 +128,7 @@ class QueryMixin(BaseQueryMixin):
         return self.limit(pagination['limit']).offset(pagination['offset'])
 
 
-def include(session, models, filter_model, ids):
+def include(session, model, columns, ids):
     """Query a list of models restricted by the filter_model's ID.
 
     :param session: SQLAlchemy query session.
@@ -136,12 +136,26 @@ def include(session, models, filter_model, ids):
     :param filter_model: SQLAlchemy model object.
     :param ids: A list of IDs to filter by.
     """
-    assert filter_model in models
+    query = session.query(*columns).join(model).filter(model.id.in_(ids))
+    if len(columns) > 1:
+        for column in columns[1:]:
+            query = query.join(column)
+    return group_by_column(query.all())
 
-    query = session.query(*models).filter(filter_model.id.in_(ids))
-    if len(models) == 1:
-        return query.all()
 
-    for model in models[1:]:
-        query = query.join(model)
-    return query.all()
+def group_by_column(items):
+    """Group a tuple of different columns into lists of like columns.
+
+    Items is submitted as a list of tuples: [(1, 2), (3, 4)].  It is
+    returned as a list of lists: [[1, 3], [2, 4]].  The items are
+    grouped by their position within the tuple.
+
+    :param items: List of tuples.
+    """
+    rows = []
+    for i in range(len(items[0])):
+        rows.append([])
+    for item in items:
+        for position, member in enumerate(item):
+            rows[position].append(member)
+    return rows
