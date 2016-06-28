@@ -151,6 +151,13 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
     def test_include_multiple_items(self):
         """Test including a list of relationships."""
+        def unique(items):
+            unqiues = []
+            for item in items:
+                if item not in unqiues:
+                    unqiues.append(item)
+            return unqiues
+
         link = 'testsite.com/people?include=student.school'
         params = url.get_parameters(link)
 
@@ -160,13 +167,13 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             self.v_driver.initialize_path(include_)
             includes.append(self.v_driver.get_model_path())
             schemas.extend(self.v_driver.schemas)
-        schemas = list(set(schemas))
+        schemas = unique(schemas)
 
         included_models = []
         for include_ in includes:
             _, models = self.m_driver.parse_path(include_)
             included_models.extend(models)
-        included_models = list(set(included_models))
+        included_models = unique(included_models)
 
         items = include(self.session, Person, included_models, [1])
         included = []
