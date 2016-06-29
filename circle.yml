@@ -9,6 +9,6 @@ test:
   pre:
      - pip install coveralls
   override:
-     - nosetests tests --with-coverage --cover-package=jsonapi_collections
+     - nosetests tests --with-coverage --cover-package=jsonapi_query
   post:
      - coveralls
