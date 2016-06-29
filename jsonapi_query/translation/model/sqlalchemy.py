@@ -1,4 +1,5 @@
 """SQLAlchemy model translation module."""
+from jsonapi_query.errors import PathError
 from jsonapi_query.translation.model import BaseModelDriver
 
 
@@ -23,18 +24,32 @@ class SQLAlchemyModelDriver(BaseModelDriver):
         model = self.model
         models = []
         for relationship in relationships:
-            reference = getattr(model, relationship)
-            if not self._is_relationship(reference):
-                raise TypeError('Invalid relationship specified.')
+            reference = self._get_relationship(relationship, model)
             model = self._get_relationship_class(reference)
             models.append(model)
 
-        column = getattr(model, attribute)
+        column = self._get_column(attribute, model)
         if self._is_relationship(column):
             model = self._get_relationship_class(column)
             models.append(model)
-            column = getattr(model, self.default_attribute)
+            column = self._get_column(self.default_attribute, model)
         return (column, models)
+
+    def _get_column(self, attribute, model):
+        try:
+            return getattr(model, attribute)
+        except AttributeError:
+            raise PathError('Invalid path specified.')
+
+    def _get_relationship(self, attribute, model):
+        column = self._get_column(attribute, model)
+        if not self._is_relationship(column):
+            raise PathError('Invalid field type specified.')
+        return column
+
+    def _get_relationship_class(self, relationship):
+        """Return the class reference of the given relationship."""
+        return relationship.property.mapper.class_
 
     def _is_relationship(self, relationship):
         """Return `True` if a relationship mapper was specified."""
@@ -43,7 +58,3 @@ class SQLAlchemyModelDriver(BaseModelDriver):
         except AttributeError:
             return False
         return True
-
-    def _get_relationship_class(self, relationship):
-        """Return the class reference of the given relationship."""
-        return relationship.property.mapper.class_

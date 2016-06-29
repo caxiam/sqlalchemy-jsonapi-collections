@@ -1,4 +1,5 @@
 """marshmallow-jsonapi schema translation module."""
+from jsonapi_query.errors import DataError, PathError
 from jsonapi_query.translation.view import BaseViewDriver
 
 
@@ -29,11 +30,8 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
 
         schema = self.view
         for field_name in relationships:
-            field = self._get_field(field_name, schema)
-            if not self._is_relationship(field):
-                raise TypeError('Invalid relationship field specified.')
+            field = self._get_relationship(field_name, schema)
             self._append_field_meta(field, field_name)
-
             schema = field.schema
             self.schemas.append(schema)
 
@@ -60,10 +58,22 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
 
     def deserialize_value(self, field, value):
         """Deserialize a string value to the appropriate type."""
-        return field.deserialize(value)
+        try:
+            return field.deserialize(value)
+        except:
+            raise DataError('Invalid value specified.')
 
     def _get_field(self, attribute, schema):
-        return schema._declared_fields[attribute]
+        try:
+            return schema._declared_fields[attribute]
+        except KeyError:
+            raise PathError('Invalid path specified.')
+
+    def _get_relationship(self, attribute, schema):
+        field = self._get_field(attribute, schema)
+        if not self._is_relationship(field):
+            raise PathError('Invalid field type specified.')
+        return field
 
     def _is_relationship(self, field):
         return hasattr(field, 'related_schema')
