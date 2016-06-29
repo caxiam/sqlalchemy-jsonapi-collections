@@ -1,4 +1,5 @@
 """SQLAlchemy model driver module."""
+from jsonapi_query.errors import PathError
 from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
 from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 
@@ -46,7 +47,7 @@ class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
         try:
             self.driver.parse_path('height')
             self.assertTrue(False)
-        except AttributeError:
+        except PathError:
             self.assertTrue(True)
 
     def test_column_as_relationship(self):
@@ -54,5 +55,5 @@ class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
         try:
             self.driver.parse_path('age.id')
             self.assertTrue(False)
-        except TypeError:
+        except PathError:
             self.assertTrue(True)
