@@ -149,7 +149,36 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
-    def test_include_multiple_items(self):
+    def test_include_single_column(self):
+        """Test including a relationship."""
+        link = 'testsite.com/people?include=student'
+        params = url.get_parameters(link)
+
+        includes = []
+        schemas = []
+        for include_ in url.get_includes(params):
+            self.v_driver.initialize_path(include_)
+            includes.append(self.v_driver.get_model_path())
+            schemas.extend(self.v_driver.schemas)
+
+        included_models = []
+        for include_ in includes:
+            _, models = self.m_driver.parse_path(include_)
+            included_models.extend(models)
+
+        items = include(self.session, Person, included_models, [1])
+        included = []
+        for position, columns in enumerate(items):
+            schema = schemas[position]
+            included.extend(schema().dump(columns, many=True).data['data'])
+
+        self.assertTrue(len(schemas) == 1)
+        self.assertTrue(len(included_models) == 1)
+        self.assertTrue(len(items) == 1)
+        self.assertTrue(len(items[0]) == 1)
+        self.assertTrue(len(included) == 1)
+
+    def test_include_multiple_columns(self):
         """Test including a list of relationships."""
         def unique(items):
             unqiues = []
