@@ -155,10 +155,23 @@ def group_by_column(items):
 
     :param items: List of tuples.
     """
+    if isinstance(items[0], tuple):
+        return _group_by_many(items)
+    return _group_by_single(items)
+
+
+def _group_by_many(items):
     rows = []
     for i in range(len(items[0])):
         rows.append([])
     for item in items:
         for position, member in enumerate(item):
             rows[position].append(member)
+    return rows
+
+
+def _group_by_single(items):
+    rows = [[]]
+    for item in items:
+        rows[0].append(item)
     return rows
