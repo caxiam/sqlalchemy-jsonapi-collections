@@ -19,7 +19,8 @@ class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
         self.assertTrue(len(self.driver.fields) == 3)
         self.assertTrue(
             self.driver.field_names == ['student', 'school', 'name'])
-        self.assertTrue(self.driver.schemas == [Student, School])
+        schemas = [schema.__class__ for schema in self.driver.schemas]
+        self.assertTrue(schemas == [Student, School])
 
     def test_initialize_dasherized_path(self):
         """Test initializing a dasherized path."""
