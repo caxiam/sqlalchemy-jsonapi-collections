@@ -76,4 +76,4 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
         return field
 
     def _is_relationship(self, field):
-        return hasattr(field, 'related_schema')
+        return hasattr(field, 'schema')
