@@ -170,7 +170,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
-            included.extend(schema().dump(columns, many=True).data['data'])
+            included.extend(schema.dump(columns, many=True).data['data'])
 
         self.assertTrue(len(schemas) == 1)
         self.assertTrue(len(included_models) == 1)
@@ -208,7 +208,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
-            included.extend(schema().dump(columns, many=True).data['data'])
+            included.extend(schema.dump(columns, many=True).data['data'])
 
         self.assertTrue(len(schemas) == 2)
         self.assertTrue(len(included_models) == 2)
