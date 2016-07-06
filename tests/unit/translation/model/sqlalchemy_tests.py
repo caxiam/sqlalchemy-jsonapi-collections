@@ -57,3 +57,10 @@ class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
             self.assertTrue(False)
         except PathError:
             self.assertTrue(True)
+
+    def test_empty_path(self):
+        """Test parsing an empty path."""
+        column, models = self.driver.parse_path('')
+
+        self.assertTrue(column is None)
+        self.assertTrue(models == [])

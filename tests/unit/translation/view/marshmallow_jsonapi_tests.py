@@ -1,5 +1,6 @@
 from datetime import date
 
+from jsonapi_query.errors import DataError, PathError
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
     MarshmallowJSONAPIDriver)
 from tests.marshmallow_jsonapi import (
@@ -30,6 +31,11 @@ class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
             self.driver.fields == [Person._declared_fields['birth_date']])
         self.assertTrue(self.driver.field_names == ['birth_date'])
         self.assertTrue(self.driver.schemas == [])
+
+    def test_initialize_empty_path(self):
+        """Test initializing an empty path."""
+        driver = self.driver.initialize_path('')
+        self.assertTrue(driver == self.driver)
 
     def test_initializing_multiple_paths(self):
         """Test initializing multiple paths."""
@@ -65,3 +71,28 @@ class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
 
         value = self.driver.deserialize_value(field, '2014-01-01')
         self.assertTrue(value == date(2014, 1, 1))
+
+    def test_get_invalid_attribute(self):
+        """Test retrieving an invalid attribute path."""
+        try:
+            self.driver.initialize_path('student.title')
+            self.assertTrue(False)
+        except PathError:
+            self.assertTrue(True)
+
+    def test_get_invalid_relationship(self):
+        """Test retrieving an invalid relationship path."""
+        try:
+            self.driver.initialize_path('birth-date.school')
+            self.assertTrue(False)
+        except PathError:
+            self.assertTrue(True)
+
+    def test_deserialize_invalid_value(self):
+        """Test deserializing an invalid value."""
+        try:
+            self.driver.initialize_path('birth-date')
+            self.driver.deserialize_values(['test'])
+            self.assertTrue(False)
+        except DataError:
+            self.assertTrue(True)
