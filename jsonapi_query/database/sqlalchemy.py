@@ -23,7 +23,7 @@ class QueryMixin(BaseQueryMixin):
         :param column: SQLAlchemy column object.
         :param strategy: Query filter string name reference.
         :param values: List of typed values.
-        :param joins: List of SQLAlchemy model objects.
+        :param joins: List of SQLAlchemy mapper objects.
         """
         negated = strategy.startswith('~')
         if negated:

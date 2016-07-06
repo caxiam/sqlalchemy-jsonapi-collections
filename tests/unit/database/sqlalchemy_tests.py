@@ -1,7 +1,7 @@
 """Test database interactions."""
 from datetime import datetime
 
-from sqlalchemy.orm import aliased, Query, sessionmaker
+from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapi_query.database.sqlalchemy import include, QueryMixin
 from tests.sqlalchemy import (
@@ -125,6 +125,13 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             self.assertTrue(False)
         except ValueError:
             self.assertTrue(True)
+
+    def test_query_filter_multiple_joins(self):
+        """Test filtering a query with multiple join conditions."""
+        models = self.session.query(Person).apply_filter(
+            School.name, 'eq', ['School'],
+            [Person.student, Student.school]).all()
+        self.assertTrue(len(models) == 2)
 
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
