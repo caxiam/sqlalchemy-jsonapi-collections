@@ -31,11 +31,13 @@ class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
 
         school = School(name='School')
         self.session.add(school)
+        school = School(name='College')
+        self.session.add(school)
 
         student = Student(school_id=1, person_id=1)
         self.session.add(student)
 
-        student = Student(school_id=1, person_id=2)
+        student = Student(school_id=2, person_id=2)
         self.session.add(student)
 
 
@@ -131,7 +133,8 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         models = self.session.query(Person).apply_filter(
             School.name, 'eq', ['School'],
             [Person.student, Student.school]).all()
-        self.assertTrue(len(models) == 2)
+        self.assertTrue(len(models) == 1)
+        self.assertTrue(models[0].name == 'Fred')
 
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -162,6 +165,13 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             Student).apply_sort(Person.name, '-', [Person]).all()
         self.assertTrue(models[0].person.name == 'Fred')
         self.assertTrue(models[1].person.name == 'Carl')
+
+    def test_query_sort_over_multiple_joins(self):
+        """Test sorting a query with multiple join conditions."""
+        models = self.session.query(Person).apply_sort(
+            School.name, '+', [Person.student, Student.school]).all()
+        self.assertTrue(models[0].name == 'Carl')
+        self.assertTrue(models[1].name == 'Fred')
 
 
 class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
