@@ -11,6 +11,37 @@ from unittest import TestCase
 Base = declarative_base()
 
 
+class Category(Base):
+    """Mock category table."""
+
+    __tablename__ = "category"
+
+    id = Column(Integer, primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id'))
+    name = Column(String)
+
+    category = relationship(
+        'Category', backref='categories', remote_side=[id], uselist=False)
+
+
+class Product(Base):
+    """Mock product table."""
+
+    __tablename__ = "product"
+
+    id = Column(Integer, primary_key=True)
+    primary_category_id = Column(Integer, ForeignKey('category.id'))
+    secondary_category_id = Column(Integer, ForeignKey('category.id'))
+    name = Column(String)
+
+    primary_category = relationship(
+        'Category', backref='primary_products',
+        foreign_keys=[primary_category_id])
+    secondary_category = relationship(
+        'Category', backref='secondary_products',
+        foreign_keys=[secondary_category_id])
+
+
 class Person(Base):
     """Mock person table."""
 
