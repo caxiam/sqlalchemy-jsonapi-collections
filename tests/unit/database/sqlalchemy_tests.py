@@ -1,10 +1,11 @@
 """Test database interactions."""
 from datetime import datetime
 
-from sqlalchemy.orm import Query, sessionmaker
+from sqlalchemy.orm import aliased, Query, sessionmaker
 
-from jsonapi_query.database.sqlalchemy import QueryMixin
-from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
+from jsonapi_query.database.sqlalchemy import include, QueryMixin
+from tests.sqlalchemy import (
+    BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
 
 
 class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
@@ -96,11 +97,34 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
+    def test_query_filter_in_values(self):
+        """Test filtering a query by the `in` strategy."""
+        models = self.session.query(
+            Person).apply_filter(Person.name, 'in', ['Fred']).all()
+        self.assertTrue(len(models) == 1)
+        self.assertTrue(models[0].name == 'Fred')
+
+    def test_query_filter_not_in_values(self):
+        """Test filtering a query by the `~in` strategy."""
+        models = self.session.query(
+            Person).apply_filter(Person.name, '~in', ['Fred']).all()
+        self.assertTrue(len(models) == 1)
+        self.assertTrue(models[0].name == 'Carl')
+
     def test_query_filter_multiple_values(self):
         """Test filtering a query by multiple values."""
         models = self.session.query(
             Person).apply_filter(Person.name, 'eq', ['Fred', 'Carl']).all()
         self.assertTrue(len(models) == 2)
+
+    def test_query_filter_invalid_strategy(self):
+        """Test filtering a query by an invalid strategy."""
+        try:
+            self.session.query(
+                Person).apply_filter(Person.name, 'qq', ['Fred']).all()
+            self.assertTrue(False)
+        except ValueError:
+            self.assertTrue(True)
 
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -156,3 +180,66 @@ class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             Person).apply_paginators([('number', 2), ('limit', 1)]).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
+
+
+class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+    """Test constructing an included query."""
+
+    def test_include_one_column(self):
+        """Test including a single relationship."""
+        result = include(
+            self.session, Person, [Student], [Person.student], [1])
+        self.assertTrue(isinstance(result[0][0], Student))
+
+    def test_include_multiple_columns(self):
+        """Test including multiple relationships."""
+        result = include(
+            self.session, Person, [Student, School],
+            [Person.student, Student.school], [1])
+        self.assertTrue(isinstance(result[0][0], Student))
+        self.assertTrue(isinstance(result[1][0], School))
+
+    def test_include_self_referential_relationship(self):
+        """Test including a self-referential relationship."""
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        c = Category(name='Category C', category_id=2)
+        self.session.add(c)
+
+        # A word on the join condition.  Because people will be
+        # referencing the attribute they want to include...
+        # e.g. include=category.categories.
+        # We need to invert the relationship.  This test demonstrates
+        # that inversion.
+        result = include(
+            self.session, Category, [Category],
+            [Category.categories.property.back_populates], [2])
+        self.assertTrue(isinstance(result[0][0], Category))
+        self.assertTrue(result[0][0].id == 3)
+
+    def test_include_ambiguous_join_conditions(self):
+        """Test including a model when a join can be made multiple ways."""
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
+        self.session.add(p)
+
+        result = include(
+            self.session, Product, [Category],
+            [Product.primary_category, Product.secondary_category], [1])
+        self.assertTrue(isinstance(result[0][0], Category))
+        self.assertTrue(isinstance(result[0][1], Category))
+
+    def test_include_no_columns(self):
+        """Test including an empty set of relationships."""
+        result = include(self.session, Person, [], [], [1])
+        self.assertTrue(result == [])
+
+    def test_include_no_ids(self):
+        """Test including ."""
+        result = include(self.session, Person, [Student], [], [])
+        self.assertTrue(result == [])
