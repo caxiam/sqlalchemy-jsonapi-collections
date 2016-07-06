@@ -16,31 +16,35 @@ class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
 
     def test_attribute_column(self):
         """Test getting an attribute column."""
-        column, models = self.driver.parse_path('name')
+        column, models, joins = self.driver.parse_path('name')
 
         self.assertTrue(column == Person.name)
         self.assertTrue(models == [])
+        self.assertTrue(joins == [])
 
     def test_nested_attribute_column(self):
         """Test getting a related attribute column."""
-        column, models = self.driver.parse_path('student.school_id')
+        column, models, joins = self.driver.parse_path('student.school_id')
 
         self.assertTrue(column == Student.school_id)
         self.assertTrue(models == [Student])
+        self.assertTrue(joins == [Person.student])
 
     def test_deeply_nested_attribute_column(self):
         """Test getting a deeply related attribute column."""
-        column, models = self.driver.parse_path('student.school.name')
+        column, models, joins = self.driver.parse_path('student.school.name')
 
         self.assertTrue(column == School.name)
         self.assertTrue(models == [Student, School])
+        self.assertTrue(joins == [Person.student, Student.school])
 
     def test_missing_attribute_column(self):
         """Test getting a missing attribute's default column."""
-        column, models = self.driver.parse_path('student')
+        column, models, joins = self.driver.parse_path('student')
 
         self.assertTrue(column == Student.id)
         self.assertTrue(models == [Student])
+        self.assertTrue(joins == [Person.student])
 
     def test_unknown_attribute(self):
         """Test getting an attribute that doesn't exist on the object."""
@@ -60,7 +64,8 @@ class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
 
     def test_empty_path(self):
         """Test parsing an empty path."""
-        column, models = self.driver.parse_path('')
+        column, models, joins = self.driver.parse_path('')
 
         self.assertTrue(column is None)
         self.assertTrue(models == [])
+        self.assertTrue(joins == [])
