@@ -128,21 +128,22 @@ class QueryMixin(BaseQueryMixin):
         return self.limit(pagination['limit']).offset(pagination['offset'])
 
 
-def include(session, model, columns, ids):
+def include(session, model, columns, joins, ids):
     """Query a list of models restricted by the filter_model's ID.
 
     :param session: SQLAlchemy query session.
-    :param models: A list of SQLAlchemy model objects.
-    :param filter_model: SQLAlchemy model object.
+    :param model: SQLAlchemy model class.
+    :param columns: A list of SQLAlchemy model classes.
+    :param joins: A list of relationship mappers.
     :param ids: A list of IDs to filter by.
     """
     if columns == [] or ids == []:
         return []
 
-    query = session.query(*columns).join(model).filter(model.id.in_(ids))
-    if len(columns) > 1:
-        for column in columns[1:]:
-            query = query.join(column)
+    query = session.query(*columns)
+    for join in joins:
+        query = query.join(join, aliased=True)
+    query = query.filter(model.id.in_(ids))
     return group_by_column(query.all())
 
 
@@ -155,6 +156,9 @@ def group_by_column(items):
 
     :param items: List of tuples.
     """
+    if items == []:
+        return []
+
     if isinstance(items[0], tuple):
         return _group_by_many(items)
     return _group_by_single(items)
