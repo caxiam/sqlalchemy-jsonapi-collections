@@ -69,19 +69,14 @@ class MarshmallowDriver(BaseDriver):
 
     def validate_relationship_path(self, path):
         """Return `False` if the path cannot be found."""
-        model = None
         schema = None
         for field in path.split('.'):
             try:
-                column_name = self.get_column_name(field, schema)
-                column = self.get_column(column_name, model)
+                field = self.get_field(field, schema)
             except FieldError:
                 return False
 
-            if not self.is_relationship(column):
+            if not hasattr(field.__class__, 'schema'):
                 return False
-
-            model = self.get_column_model(column)
-            field = self.get_field(field, schema)
             schema = self.get_related_schema(field)
         return True
