@@ -33,10 +33,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         carl = Person(name='Carl', age=10, birth_date=date)
         self.session.add(carl)
 
-        school = School(name='School 1')
+        school = School(name='School')
         self.session.add(school)
-
-        school = School(name='School 2')
+        school = School(name='College')
         self.session.add(school)
 
         student = Student(school_id=1, person_id=1)
@@ -59,8 +58,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         new = []
         for fltr in filters:
-            column, models = self.m_driver.parse_path(fltr[0])
-            new.append((column, fltr[1], fltr[2], models))
+            column, models, joins = self.m_driver.parse_path(fltr[0])
+            new.append((column, fltr[1], fltr[2], joins))
 
         models = self.session.query(Person).apply_filters(new).all()
         self.assertTrue(len(models) == 1)
@@ -68,7 +67,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
     def test_filter_query_deeply_nested(self):
         """Test filtering a query by a deeply nested url string."""
-        link = 'testsite.com/people?filter[student.school.title]=School 1'
+        link = 'testsite.com/people?filter[student.school.title]=School'
         params = url.get_parameters(link)
 
         filters = []
@@ -80,8 +79,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         new = []
         for fltr in filters:
-            column, models = self.m_driver.parse_path(fltr[0])
-            new.append((column, fltr[1], fltr[2], models))
+            column, models, joins = self.m_driver.parse_path(fltr[0])
+            new.append((column, fltr[1], fltr[2], joins))
 
         models = self.session.query(Person).apply_filters(new).all()
         self.assertTrue(len(models) == 1)
@@ -100,8 +99,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         new = []
         for sort in sorts:
-            column, models = self.m_driver.parse_path(sort[0])
-            new.append((column, sort[1], models))
+            column, models, joins = self.m_driver.parse_path(sort[0])
+            new.append((column, sort[1], joins))
 
         models = self.session.query(Person).apply_sorts(new).all()
         self.assertTrue(len(models) == 2)
@@ -120,12 +119,13 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
         new = []
         for sort in sorts:
-            column, models = self.m_driver.parse_path(sort[0])
-            new.append((column, sort[1], models))
+            column, models, joins = self.m_driver.parse_path(sort[0])
+            new.append((column, sort[1], joins))
 
         models = self.session.query(Person).apply_sorts(new).all()
         self.assertTrue(len(models) == 2)
-        self.assertTrue(models[0].name == 'Carl')
+        self.assertTrue(models[0].name == 'Fred')
+        self.assertTrue(models[1].name == 'Carl')
 
     def test_paginate_query_by_limit(self):
         """Test paginating a query by the limit strategy."""
@@ -162,11 +162,13 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             schemas.extend(self.v_driver.schemas)
 
         included_models = []
+        mappers = []
         for include_ in includes:
-            _, models = self.m_driver.parse_path(include_)
+            _, models, joins = self.m_driver.parse_path(include_)
             included_models.extend(models)
+            mappers.extend(joins)
 
-        items = include(self.session, Person, included_models, [1])
+        items = include(self.session, Person, included_models, mappers, [1])
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
@@ -199,12 +201,14 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         schemas = unique(schemas)
 
         included_models = []
+        mappers = []
         for include_ in includes:
-            _, models = self.m_driver.parse_path(include_)
+            _, models, joins = self.m_driver.parse_path(include_)
             included_models.extend(models)
+            mappers.extend(joins)
         included_models = unique(included_models)
 
-        items = include(self.session, Person, included_models, [1])
+        items = include(self.session, Person, included_models, mappers, [1])
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
