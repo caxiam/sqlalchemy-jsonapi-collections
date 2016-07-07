@@ -72,4 +72,4 @@ class SQLAlchemyModelDriver(BaseModelDriver):
         if mapper.property.backref is not None:
             return mapper.property.backref
         else:
-            return mapper.property.back_populates
+            return getattr(model, mapper.property.back_populates)
