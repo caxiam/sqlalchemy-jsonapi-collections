@@ -207,6 +207,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         result = include(
             self.session, Person, [Student], [Person.student], [1])
         self.assertTrue(isinstance(result[0][0], Student))
+        self.assertTrue(result[0][0].person_id == 1)
 
     def test_include_multiple_columns(self):
         """Test including multiple relationships."""
@@ -225,14 +226,8 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         c = Category(name='Category C', category_id=2)
         self.session.add(c)
 
-        # A word on the join condition.  Because people will be
-        # referencing the attribute they want to include...
-        # e.g. include=category.categories.
-        # We need to invert the relationship.  This test demonstrates
-        # that inversion.
         result = include(
-            self.session, Category, [Category],
-            [Category.categories.property.back_populates], [2])
+            self.session, Category, [Category], [Category.categories], [2])
         self.assertTrue(isinstance(result[0][0], Category))
         self.assertTrue(result[0][0].id == 3)
 
