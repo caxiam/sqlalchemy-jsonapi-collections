@@ -1,4 +1,5 @@
 """SQLAlchemy jsonapi-query adapter."""
+from sqlalchemy.orm import aliased
 from jsonapi_query.database import BaseQueryMixin
 
 
@@ -140,14 +141,26 @@ def include(session, model, columns, joins, ids):
     if columns == [] or ids == []:
         return []
 
-    query = session.query(*columns)
+    selects = [aliased(_get_mapper_class(join)) for join in joins]
+    query = session.query(*selects).filter(model.id.in_(ids))
     for join in joins:
-        query = query.join(join, aliased=True)
-    query = query.filter(model.id.in_(ids))
-    return group_by_column(query.all())
+        for select in selects:
+            if _get_mapper_class(join) == _get_aliased_class(select):
+                query = query.join(select, join)
+                selects.remove(select)
+                break
+    return group_by_column(query.all(), columns)
 
 
-def group_by_column(items):
+def _get_aliased_class(x):
+    return x._aliased_insp.class_
+
+
+def _get_mapper_class(mapper):
+    return mapper.property.mapper.class_
+
+
+def group_by_column(items, columns=[]):
     """Group a tuple of different columns into lists of like columns.
 
     Items is submitted as a list of tuples: [(1, 2), (3, 4)].  It is
@@ -155,27 +168,36 @@ def group_by_column(items):
     grouped by their position within the tuple.
 
     :param items: List of tuples.
+    :param columns: A list of SQLAlchemy model classes.
     """
     if items == []:
         return []
 
     if isinstance(items[0], tuple):
-        return _group_by_many(items)
+        return _group_by_many(items, columns)
     return _group_by_single(items)
 
 
-def _group_by_many(items):
+def _group_by_many(items, columns):
     rows = []
-    for i in range(len(items[0])):
+    for column in columns:
         rows.append([])
     for item in items:
-        for position, member in enumerate(item):
-            rows[position].append(member)
-    return rows
+        for member in item:
+            rows[columns.index(member.__class__)].append(member)
+    return [_unique(row) for row in rows]
 
 
 def _group_by_single(items):
     rows = [[]]
     for item in items:
         rows[0].append(item)
-    return rows
+    return _unique(rows)
+
+
+def _unique(items):
+    unqiues = []
+    for item in items:
+        if item not in unqiues:
+            unqiues.append(item)
+    return unqiues
