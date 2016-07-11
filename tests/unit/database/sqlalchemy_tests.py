@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query.database.sqlalchemy import include, QueryMixin
+from jsonapi_query.database.sqlalchemy import QueryMixin
 from tests.sqlalchemy import (
     BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
 
@@ -136,6 +136,22 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
+    def test_query_filter_ambiguous_join_conditions(self):
+        """Test filtering a query under ambiguous join conditions."""
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
+        self.session.add(p)
+
+        model = self.session.query(Product).apply_filters([
+            (Category.name, 'eq', ['Category A'], [Product.primary_category]),
+            (Category.name, 'eq', ['Category B'], [Product.secondary_category])
+        ]).first()
+        self.assertTrue(isinstance(model, Product))
+        self.assertTrue(model.name == 'Tst')
+
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     """Test query sorting related methods."""
@@ -155,14 +171,14 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_sort_relationship_ascending(self):
         """Test sorting a query by an ascending relationship column."""
         models = self.session.query(
-            Student).apply_sort(Person.name, '+', [Person]).all()
+            Student).apply_sort(Person.name, '+', [Student.person]).all()
         self.assertTrue(models[0].person.name == 'Carl')
         self.assertTrue(models[1].person.name == 'Fred')
 
     def test_query_sort_relationship_descending(self):
         """Test sorting a query by a descending relationship column."""
         models = self.session.query(
-            Student).apply_sort(Person.name, '-', [Person]).all()
+            Student).apply_sort(Person.name, '-', [Student.person]).all()
         self.assertTrue(models[0].person.name == 'Fred')
         self.assertTrue(models[1].person.name == 'Carl')
 
@@ -172,6 +188,22 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             School.name, '+', [Person.student, Student.school]).all()
         self.assertTrue(models[0].name == 'Carl')
         self.assertTrue(models[1].name == 'Fred')
+
+    def test_query_sort_ambiguous_join_conditions(self):
+        """Test filtering a query under ambiguous join conditions."""
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        p = Product(primary_category_id=1, name='A')
+        self.session.add(p)
+        p = Product(primary_category_id=2, name='B')
+        self.session.add(p)
+
+        models = self.session.query(Product).apply_sort(
+            Category.name, '-', [Product.primary_category]).all()
+        self.assertTrue(models[0].name == 'B')
+        self.assertTrue(models[1].name == 'A')
 
 
 class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -204,18 +236,18 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_include_one_column(self):
         """Test including a single relationship."""
-        result = include(
-            self.session, Person, [Student], [Person.student], [1])
-        self.assertTrue(isinstance(result[0][0], Student))
-        self.assertTrue(result[0][0].person_id == 1)
+        models = self.session.query(Person).include([Person.student]).first()
+        self.assertTrue(isinstance(models[0], Person))
+        self.assertTrue(isinstance(models[1], Student))
+        self.assertTrue(models[1].person_id == 1)
 
     def test_include_multiple_columns(self):
         """Test including multiple relationships."""
-        result = include(
-            self.session, Person, [Student, School],
-            [Person.student, Student.school], [1])
-        self.assertTrue(isinstance(result[0][0], Student))
-        self.assertTrue(isinstance(result[1][0], School))
+        models = self.session.query(Person).include([
+            Person.student, Student.school]).first()
+        self.assertTrue(isinstance(models[0], Person))
+        self.assertTrue(isinstance(models[1], Student))
+        self.assertTrue(isinstance(models[2], School))
 
     def test_include_self_referential_relationship(self):
         """Test including a self-referential relationship."""
@@ -226,10 +258,18 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         c = Category(name='Category C', category_id=2)
         self.session.add(c)
 
-        result = include(
-            self.session, Category, [Category], [Category.categories], [2])
-        self.assertTrue(isinstance(result[0][0], Category))
-        self.assertTrue(result[0][0].id == 3)
+        models = self.session.query(Category).filter(Category.id == 2).include(
+            [Category.category, Category.categories]).first()
+        self.assertTrue(len(models) == 3)
+
+        self.assertTrue(isinstance(models[0], Category))
+        self.assertTrue(models[0].id == 2)
+
+        self.assertTrue(isinstance(models[1], Category))
+        self.assertTrue(models[1].id == 1)
+
+        self.assertTrue(isinstance(models[2], Category))
+        self.assertTrue(models[2].id == 3)
 
     def test_include_ambiguous_join_conditions(self):
         """Test including a model when a join can be made multiple ways."""
@@ -240,18 +280,12 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
         self.session.add(p)
 
-        result = include(
-            self.session, Product, [Category],
-            [Product.primary_category, Product.secondary_category], [1])
-        self.assertTrue(isinstance(result[0][0], Category))
-        self.assertTrue(isinstance(result[0][1], Category))
+        models = self.session.query(Product).include([
+            Product.primary_category, Product.secondary_category]).first()
+        self.assertTrue(isinstance(models[1], Category))
+        self.assertTrue(isinstance(models[2], Category))
 
-    def test_include_no_columns(self):
+    def test_include_no_mappers(self):
         """Test including an empty set of relationships."""
-        result = include(self.session, Person, [], [], [1])
-        self.assertTrue(result == [])
-
-    def test_include_no_ids(self):
-        """Test including ."""
-        result = include(self.session, Person, [Student], [], [])
-        self.assertTrue(result == [])
+        models = self.session.query(Person).include([]).first()
+        self.assertTrue(isinstance(models, Person))

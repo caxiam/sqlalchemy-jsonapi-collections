@@ -26,6 +26,10 @@ class QueryMixin(BaseQueryMixin):
         :param values: List of typed values.
         :param joins: List of SQLAlchemy mapper objects.
         """
+        column, classes = self._alias_mappers(column, joins)
+        for pos, class_ in enumerate(classes):
+            self = self.join(class_, joins[pos])
+
         negated = strategy.startswith('~')
         if negated:
             strategy = strategy[1:]
@@ -53,8 +57,6 @@ class QueryMixin(BaseQueryMixin):
             raise ValueError('Invalid query strategy: {}'.format(strategy))
 
         filters = self._get_filters(column, values, strategy, negated)
-        for join in joins:
-            self = self.join(join)
         return self.filter(filters)
 
     def _get_filters(self, column, values, strategy, negated=False):
@@ -106,10 +108,12 @@ class QueryMixin(BaseQueryMixin):
         :param direction: Query sort direction reference.
         :param join: List of SQLAlchemy model objects.
         """
+        column, classes = self._alias_mappers(column, joins)
+        for pos, class_ in enumerate(classes):
+            self = self.join(class_, joins[pos])
+
         if direction == '-':
             column = column.desc()
-        for join in joins:
-            self = self.join(join)
         return self.order_by(column)
 
     def apply_paginators(self, paginators):
@@ -127,6 +131,40 @@ class QueryMixin(BaseQueryMixin):
             limit = pagination['limit']
             pagination['offset'] = pagination['number'] * limit - limit
         return self.limit(pagination['limit']).offset(pagination['offset'])
+
+    def include(self, mappers):
+        """Return an additional set of data with the query.
+
+        For a given query, join a set of mappers and select an aliased
+        entity.  The mappers may chain off one another.
+
+        This method does not return a stable data-type.  If no mappers
+        are included, the response type will be a model instance or a
+        list of model instances.  With a set of mappers a tuple or set
+        of tuples will be returned of length `mappers` + 1.
+
+        Note, if at any point you intend to use `filter_by(column=value)`,
+        it is highly recommend you call it prior to calling the include
+        method. Using `filter_by` will select from the most recently
+        joined aliased model.  Using `filter(Model.column == value)` is
+        safe and will filter as expected.
+
+        :param mappers: A list of SQLAlchemy mapper objects.
+        """
+        if mappers == []:
+            return self
+
+        selects = [aliased(_get_mapper_class(mapper)) for mapper in mappers]
+        for pos, select in enumerate(selects):
+            self = self.join(select, mappers[pos]).add_entity(select)
+        return self
+
+    def _alias_mappers(self, column, mappers):
+        classes = [aliased(_get_mapper_class(mapper)) for mapper in mappers]
+        for pos, class_ in enumerate(classes):
+            if column.class_ == _get_aliased_class(class_):
+                column = getattr(class_, column.property.class_attribute.key)
+        return column, classes
 
 
 def include(session, model, columns, joins, ids):
