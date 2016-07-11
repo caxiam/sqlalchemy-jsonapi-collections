@@ -167,6 +167,27 @@ class QueryMixin(BaseQueryMixin):
         return column, classes
 
 
+def group_and_remove(items, models):
+    """Group and restructure a list of tuples by like items.
+
+    This function groups a list of tuples by their model type.  Tuple
+    members that do not match any of the provided models will be not
+    be returned.
+
+    :param items: A list of rows containing column tuples.
+    :param models: A list of SQLAlchemy model classes.
+    """
+    response = []
+    for model in models:
+        response.append([])
+    for item in items:
+        for member in item:
+            position = models.index(member.__class__)
+            if member not in response[position]:
+                response[position].append(member)
+    return response
+
+
 def include(session, model, columns, joins, ids):
     """Query a list of models restricted by the filter_model's ID.
 
