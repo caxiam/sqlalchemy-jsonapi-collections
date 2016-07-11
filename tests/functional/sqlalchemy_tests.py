@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapi_query import url
-from jsonapi_query.database.sqlalchemy import include, QueryMixin
+from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
 from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
     MarshmallowJSONAPIDriver)
@@ -168,7 +168,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             included_models.extend(models)
             mappers.extend(joins)
 
-        items = include(self.session, Person, included_models, mappers, [1])
+        items = self.session.query(
+            Person).filter_by(id=1).include(mappers).all()
+        items = group_and_remove(items, [Person] + included_models)[1:]
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
@@ -208,7 +210,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             mappers.extend(joins)
         included_models = unique(included_models)
 
-        items = include(self.session, Person, included_models, mappers, [1])
+        items = self.session.query(
+            Person).filter_by(id=1).include(mappers).all()
+        items = group_and_remove(items, [Person] + included_models)[1:]
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
