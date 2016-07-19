@@ -183,6 +183,8 @@ def group_and_remove(items, models):
     response = [[] for model in models]
     for item in items:
         for member in item:
+            if member is None:
+                continue
             position = models.index(member.__class__)
             if member not in response[position]:
                 response[position].append(member)

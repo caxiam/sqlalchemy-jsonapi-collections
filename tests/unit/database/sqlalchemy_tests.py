@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query.database.sqlalchemy import QueryMixin
+from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
 from tests.sqlalchemy import (
     BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
 
@@ -287,14 +287,47 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_include_does_not_restrict_primary_output(self):
         """Test including a relationship does not restrict primary output."""
-        p = Product(name='Tst')
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
+        self.session.add(p)
+
+        p = Product(name='Tst 2')
         self.session.add(p)
 
         models = self.session.query(Product).include(
             [Product.primary_category]).all()
-        self.assertTrue(len(models) == 1)
+        self.assertTrue(len(models) == 2)
 
     def test_include_no_mappers(self):
         """Test including an empty set of relationships."""
         models = self.session.query(Person).include([]).first()
         self.assertTrue(isinstance(models, Person))
+
+
+class UtilitySQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+    """Test handling a query's output."""
+
+    def test_group_and_remove(self):
+        """Test group and remove utility function."""
+        a = Category(name='Category A')
+        self.session.add(a)
+        b = Category(name='Category B', category_id=1)
+        self.session.add(b)
+        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
+        self.session.add(p)
+
+        p = Product(name='Tst 2')
+        self.session.add(p)
+
+        # Returns two products and one category.
+        items = self.session.query(Product).include(
+            [Product.primary_category]).all()
+        self.assertTrue(len(items) == 2)
+
+        output = group_and_remove(items, [Product, Category])
+        self.assertTrue(len(output) == 2)
+        self.assertTrue(len(output[0]) == 2)
+        self.assertTrue(len(output[1]) == 1)
