@@ -285,6 +285,15 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(isinstance(models[1], Category))
         self.assertTrue(isinstance(models[2], Category))
 
+    def test_include_does_not_restrict_primary_output(self):
+        """Test including a relationship does not restrict primary output."""
+        p = Product(name='Tst')
+        self.session.add(p)
+
+        models = self.session.query(Product).include(
+            [Product.primary_category]).all()
+        self.assertTrue(len(models) == 1)
+
     def test_include_no_mappers(self):
         """Test including an empty set of relationships."""
         models = self.session.query(Person).include([]).first()

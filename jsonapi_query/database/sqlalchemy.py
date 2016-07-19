@@ -156,7 +156,7 @@ class QueryMixin(BaseQueryMixin):
 
         selects = [aliased(_get_mapper_class(mapper)) for mapper in mappers]
         for pos, select in enumerate(selects):
-            self = self.join(select, mappers[pos]).add_entity(select)
+            self = self.outerjoin(select, mappers[pos]).add_entity(select)
         return self
 
     def _alias_mappers(self, column, mappers):
