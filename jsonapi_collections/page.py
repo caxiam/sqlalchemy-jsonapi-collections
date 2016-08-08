@@ -3,7 +3,7 @@
 
 This module validates, exposes, and acts upon pagination related data.
 """
-import urllib
+from urllib.parse import urlencode
 
 
 class Pagination(object):
@@ -67,33 +67,33 @@ class Pagination(object):
         next_offset = min(self.offset + self.limit, total - self.limit)
         prev_offset = max(self.offset - self.limit, 0)
 
-        self_params = urllib.urlencode(parameters)
+        self_params = urlencode(parameters)
 
         first_obj = parameters
         first_obj = self._update_if_exists('page[offset]', 0, first_obj)
         first_obj = self._update_if_exists('page[number]', 1, first_obj)
-        first_params = urllib.urlencode(first_obj)
+        first_params = urlencode(first_obj)
 
         last_obj = parameters
         last_obj = self._update_if_exists(
             'page[offset]', last_offset, last_obj)
         last_obj = self._update_if_exists(
             'page[number]', get_page(last_offset), last_obj)
-        last_params = urllib.urlencode(last_obj)
+        last_params = urlencode(last_obj)
 
         next_obj = parameters
         next_obj = self._update_if_exists(
             'page[offset]', next_offset, next_obj)
         next_obj = self._update_if_exists(
             'page[number]', get_page(next_offset), next_obj)
-        next_params = urllib.urlencode(next_obj)
+        next_params = urlencode(next_obj)
 
         prev_obj = parameters
         prev_obj = self._update_if_exists(
             'page[offset]', prev_offset, prev_obj)
         prev_obj = self._update_if_exists(
             'page[number]', get_page(prev_offset), prev_obj)
-        prev_params = urllib.urlencode(prev_obj)
+        prev_params = urlencode(prev_obj)
 
         return {
             'self': '{}?{}'.format(base_url, self_params),
