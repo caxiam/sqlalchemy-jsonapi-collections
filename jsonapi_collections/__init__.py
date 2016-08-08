@@ -162,7 +162,7 @@ class Resource(object):
         """
         errors = []
         filters = {}
-        for key, value in parameters.iteritems():
+        for key, value in parameters.items():
             if not key.startswith('filter['):
                 continue
 

@@ -168,7 +168,7 @@ class Pagination(object):
 
     def _validate_pagination_values(self, pagination_keys):
         errors = []
-        for key, value in self.parameters.iteritems():
+        for key, value in self.parameters.items():
             if key not in pagination_keys:
                 continue
             try:

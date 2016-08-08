@@ -157,7 +157,7 @@ class FilterParameter(object):
         """
         filters = []
         errors = []
-        for field_name, values in parameters.iteritems():
+        for field_name, values in parameters.items():
             try:
                 filters.append(cls(driver, field_name, values))
             except FieldError as exc:
