@@ -28,7 +28,7 @@ class MarshmallowDriver(BaseDriver):
         schema = getattr(field, 'schema', None)
         if schema is None:
             raise FieldError('Invalid relationship specified.')
-        return schema
+        return schema.__class__
 
     def deserialize(self, column, field_name, values, schema=None):
         """Deserialize a given set of values into their python types."""
