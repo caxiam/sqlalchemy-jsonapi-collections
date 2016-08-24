@@ -157,7 +157,7 @@ class FilterURLTestCase(URLTestCase):
 
         self.assertTrue(isinstance(filters[0], tuple))
         self.assertTrue(filters[0][0] == 'field1,field2')
-        self.assertTrue(filters[0][1] == 'eq')
+        self.assertTrue(filters[0][1] is None)
         self.assertTrue(filters[0][2] == ['1'])
 
     def test_get_filter_multiple_strategies(self):
@@ -181,7 +181,7 @@ class FilterURLTestCase(URLTestCase):
 
         self.assertTrue(isinstance(filters[0], tuple))
         self.assertTrue(filters[0][0] == 'field')
-        self.assertTrue(filters[0][1] == 'eq')
+        self.assertTrue(filters[0][1] is None)
         self.assertTrue(filters[0][2] == ['1', '2', 'hello'])
 
     def test_get_filter_default_strategy(self):
@@ -193,7 +193,7 @@ class FilterURLTestCase(URLTestCase):
 
         self.assertTrue(isinstance(filters[0], tuple))
         self.assertTrue(filters[0][0] == 'field')
-        self.assertTrue(filters[0][1] == 'eq')
+        self.assertTrue(filters[0][1] is None)
         self.assertTrue(filters[0][2] == ['hello'])
 
     def test_get_filter_invalid_strategy(self):
@@ -205,7 +205,7 @@ class FilterURLTestCase(URLTestCase):
 
         self.assertTrue(isinstance(filters[0], tuple))
         self.assertTrue(filters[0][0] == 'field')
-        self.assertTrue(filters[0][1] == 'eq')
+        self.assertTrue(filters[0][1] is None)
         self.assertTrue(filters[0][2] == ['invalid:strategy'])
 
     def test_skip_invalid_filter(self):

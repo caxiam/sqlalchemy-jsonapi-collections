@@ -2,7 +2,6 @@
 from urllib.parse import parse_qsl, urlparse
 
 
-DEFAULT_STRATEGY = 'eq'
 STRATEGIES = ['eq', 'gt', 'gte', 'lt', 'lte', 'in', 'like', 'ilike']
 STRATEGY_PARTITION = ':'
 
@@ -57,10 +56,10 @@ def _get_filter(key: str, value: str) -> tuple:
 
     if partition == '':
         values = strategy
-        strategy = DEFAULT_STRATEGY
+        strategy = None
     elif strategy not in STRATEGIES:
         values = ''.join((strategy, partition, values))
-        strategy = DEFAULT_STRATEGY
+        strategy = None
 
     if negated:
         strategy = '~{}'.format(strategy)

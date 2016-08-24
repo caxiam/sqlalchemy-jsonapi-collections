@@ -67,7 +67,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
     def test_filter_query_deeply_nested(self):
         """Test filtering a query by a deeply nested url string."""
-        link = 'testsite.com/people?filter[student.school.title]=School'
+        link = 'testsite.com/people?filter[student.school.title]=eq:School'
         params = url.get_parameters(link)
 
         filters = []
