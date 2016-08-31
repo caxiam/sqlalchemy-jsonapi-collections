@@ -246,14 +246,16 @@ def _group_by_many(items, columns):
         rows.append([])
     for item in items:
         for member in item:
-            rows[columns.index(member.__class__)].append(member)
+            if member is not None:
+                rows[columns.index(member.__class__)].append(member)
     return [_unique(row) for row in rows]
 
 
 def _group_by_single(items):
     rows = [[]]
     for item in items:
-        rows[0].append(item)
+        if item is not None:
+            rows[0].append(item)
     return _unique(rows)
 
 

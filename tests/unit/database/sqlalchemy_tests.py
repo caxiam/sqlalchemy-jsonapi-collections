@@ -3,7 +3,8 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
+from jsonapi_query.database.sqlalchemy import (
+    group_and_remove, include, QueryMixin)
 from tests.sqlalchemy import (
     BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
 
@@ -305,6 +306,38 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         """Test including an empty set of relationships."""
         models = self.session.query(Person).include([]).first()
         self.assertTrue(isinstance(models, Person))
+
+    def test_include_from_model(self):
+        """Test including from a model."""
+        a = Category(name='Category A')
+        self.session.add(a)
+
+        p = Product(primary_category_id=1, name='Test')
+        self.session.add(p)
+
+        items = include(
+            self.session, Product, [Category], [Product.primary_category], [1])
+        self.assertTrue(isinstance(items, list))
+        self.assertTrue(isinstance(items[0], list))
+        self.assertTrue(isinstance(items[0][0], Category))
+
+    def test_include_from_model_without_relationship(self):
+        """Test including from a model when no relationship exists."""
+        p = Product(name='Test')
+        self.session.add(p)
+
+        items = include(
+            self.session, Product, [Category], [Product.primary_category], [1])
+        self.assertTrue(isinstance(items, list))
+        self.assertTrue(isinstance(items[0], list))
+        self.assertTrue(items == [[]])
+
+        items = include(
+            self.session, Product, [Category, Category],
+            [Product.primary_category, Product.secondary_category], [1])
+        self.assertTrue(isinstance(items, list))
+        self.assertTrue(isinstance(items[0], list))
+        self.assertTrue(items == [[], []])
 
 
 class UtilitySQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
