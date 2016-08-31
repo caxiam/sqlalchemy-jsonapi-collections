@@ -216,7 +216,7 @@ def include(session, model, columns, joins, ids):
     for join in joins:
         for select in selects:
             if _get_mapper_class(join) == _get_aliased_class(select):
-                query = query.join(select, join)
+                query = query.outerjoin(select, join)
                 selects.remove(select)
                 break
     return group_by_column(query.all(), columns)
