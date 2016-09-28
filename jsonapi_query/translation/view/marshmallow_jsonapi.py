@@ -59,7 +59,9 @@ class MarshmallowJSONAPIDriver(BaseViewDriver):
     def deserialize_value(self, field, value):
         """Deserialize a string value to the appropriate type."""
         try:
-            return field.deserialize(value)
+            if value == '':
+                return None
+            return field._deserialize(value, None, None)
         except:
             raise DataError('Invalid value specified.')
 
