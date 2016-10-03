@@ -185,10 +185,21 @@ def group_and_remove(items, models):
         for member in item:
             if member is None:
                 continue
-            position = models.index(member.__class__)
+
+            position = _get_model_position(member, models)
             if member not in response[position]:
                 response[position].append(member)
     return response
+
+
+def _get_model_position(model, models):
+    class_ = model.__class__
+    if class_ in models:
+        return models.index(class_)
+
+    for model in models:
+        if issubclass(class_, model):
+            return models.index(model)
 
 
 def _get_aliased_class(x):
