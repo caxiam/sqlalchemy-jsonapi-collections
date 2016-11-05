@@ -74,16 +74,16 @@ class SQLAlchemyDriverTestCase(BaseSQLAlchemyTestCase):
         column = SQLAlchemyDriver('categories', Category)
         self.assertTrue(column.join is Category.category)
 
-    def test_factory(self):
-        """Test `factory` classmethod."""
-        components = SQLAlchemyDriver.factory('person.name', Student)
+    def test_make_from_path(self):
+        """Test `make_from_path` classmethod."""
+        components = SQLAlchemyDriver.make_from_path('person.name', Student)
         self.assertTrue(components.column == Person.name)
         self.assertTrue(components.joins == [Student.person])
         self.assertTrue(components.selects == [Person])
 
-    def test_factory_default(self):
-        """Test `factory` classmethod default attribute."""
-        components = SQLAlchemyDriver.factory('person', Student, 'status')
+    def test_make_from_path_default(self):
+        """Test `make_from_path` classmethod default attribute."""
+        components = SQLAlchemyDriver.make_from_path('person', Student, 'status')
         self.assertTrue(components.column == Person.status)
         self.assertTrue(components.joins == [Student.person])
         self.assertTrue(components.selects == [Person])

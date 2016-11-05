@@ -20,7 +20,7 @@ class BaseModelDriver(object):
     """Base model driver."""
 
     @classmethod
-    def factory(cls, path, model, default_attribute='id'):
+    def make_from_path(cls, path, model, default_attribute='id'):
         """Return a list of `Column` instances."""
         if path == '':
             return Query(None, [], [])
