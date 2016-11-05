@@ -101,7 +101,7 @@ class BaseSQLAlchemyTestCase(TestCase):
         """Create the database."""
         global engine
 
-        engine = create_engine('sqlite:///sqlalchemy.db')
+        engine = create_engine('sqlite://')
 
         @event.listens_for(engine, "connect")
         def do_connect(dbapi_connection, connection_record):
