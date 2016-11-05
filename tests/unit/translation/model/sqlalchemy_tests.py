@@ -1,71 +1,98 @@
 """SQLAlchemy model driver module."""
-from jsonapi_query.errors import PathError
-from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
-from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
+from datetime import date
+
+from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyDriver
+from tests.sqlalchemy import (
+    BaseSQLAlchemyTestCase, Person, School, Student, Category)
 
 
-class SQLAlchemyModelTestCase(BaseSQLAlchemyTestCase):
+class SQLAlchemyDriverTestCase(BaseSQLAlchemyTestCase):
     """Test converting attribute paths and adding join conditions."""
 
-    def setUp(self):
-        """Ran before every test."""
-        super().setUp()
-        # Create a row to initiate the mappers.
-        self.session.add(Person(name='Fred'))
-        self.driver = SQLAlchemyModelDriver(Person)
+    def test_is_foreign_key(self):
+        """Test `is_foreign_key` property."""
+        column = SQLAlchemyDriver('person_id', Student)
+        self.assertTrue(column.is_foreign_key)
 
-    def test_attribute_column(self):
-        """Test getting an attribute column."""
-        column, models, joins = self.driver.parse_path('name')
+        column = SQLAlchemyDriver('id', Student)
+        self.assertTrue(column.is_foreign_key is False)
 
-        self.assertTrue(column == Person.name)
-        self.assertTrue(models == [])
-        self.assertTrue(joins == [])
+    def test_is_mapper(self):
+        """Test `is_mapper` property."""
+        column = SQLAlchemyDriver('person', Student)
+        self.assertTrue(column.is_mapper)
 
-    def test_nested_attribute_column(self):
-        """Test getting a related attribute column."""
-        column, models, joins = self.driver.parse_path('student.school_id')
+        column = SQLAlchemyDriver('id', Student)
+        self.assertTrue(column.is_mapper is False)
 
-        self.assertTrue(column == Student.school_id)
-        self.assertTrue(models == [Student])
-        self.assertTrue(joins == [Person.student])
+    def test_is_primary_key(self):
+        """Test `is_primary_key` property."""
+        column = SQLAlchemyDriver('id', Student)
+        self.assertTrue(column.is_primary_key)
 
-    def test_deeply_nested_attribute_column(self):
-        """Test getting a deeply related attribute column."""
-        column, models, joins = self.driver.parse_path('student.school.name')
+        column = SQLAlchemyDriver('person', Student)
+        self.assertTrue(column.is_primary_key is False)
 
-        self.assertTrue(column == School.name)
-        self.assertTrue(models == [Student, School])
-        self.assertTrue(joins == [Person.student, Student.school])
+    def test_python_type(self):
+        """Test `python_type` property."""
+        column = SQLAlchemyDriver('id', Person)
+        self.assertTrue(column.python_type == int)
 
-    def test_missing_attribute_column(self):
-        """Test getting a missing attribute's default column."""
-        column, models, joins = self.driver.parse_path('student')
+        column = SQLAlchemyDriver('name', Person)
+        self.assertTrue(column.python_type == str)
 
-        self.assertTrue(column == Student.id)
-        self.assertTrue(models == [Student])
-        self.assertTrue(joins == [Person.student])
+        column = SQLAlchemyDriver('birth_date', Person)
+        self.assertTrue(column.python_type == date)
 
-    def test_unknown_attribute(self):
-        """Test getting an attribute that doesn't exist on the object."""
+        column = SQLAlchemyDriver('person_id', Student)
+        self.assertTrue(column.python_type == int)
+
+    def test_related_class(self):
+        """Test `related_class` property."""
+        column = SQLAlchemyDriver('school', Student)
+        self.assertTrue(column.related_class == School)
+
+        column = SQLAlchemyDriver('person', Student)
+        self.assertTrue(column.related_class == Person)
+
+    def test_is_enum(self):
+        """Test `is_enum` property."""
+        column = SQLAlchemyDriver('status', Person)
+        self.assertTrue(column.is_enum)
+
+        column = SQLAlchemyDriver('id', Person)
+        self.assertTrue(column.is_enum is False)
+
+    def test_join(self):
+        """Test `join` property."""
+        column = SQLAlchemyDriver('person', Student)
+        self.assertTrue(column.join is Student.person)
+
+        column = SQLAlchemyDriver('category', Category)
+        self.assertTrue(column.join is Category.categories)
+
+        column = SQLAlchemyDriver('categories', Category)
+        self.assertTrue(column.join is Category.category)
+
+    def test_factory(self):
+        """Test `factory` classmethod."""
+        components = SQLAlchemyDriver.factory('person.name', Student)
+        self.assertTrue(components.column == Person.name)
+        self.assertTrue(components.joins == [Student.person])
+        self.assertTrue(components.selects == [Person])
+
+    def test_factory_default(self):
+        """Test `factory` classmethod default attribute."""
+        components = SQLAlchemyDriver.factory('person', Student, 'status')
+        self.assertTrue(components.column == Person.status)
+        self.assertTrue(components.joins == [Student.person])
+        self.assertTrue(components.selects == [Person])
+
+    def test_missing_column(self):
+        """Test getting unknown column."""
         try:
-            self.driver.parse_path('height')
-            self.assertTrue(False)
-        except PathError:
+            SQLAlchemyDriver('unknown', Person)
+        except AttributeError:
             self.assertTrue(True)
-
-    def test_column_as_relationship(self):
-        """Test getting a relationshiup that doesn't exist on the model."""
-        try:
-            self.driver.parse_path('age.id')
+        else:
             self.assertTrue(False)
-        except PathError:
-            self.assertTrue(True)
-
-    def test_empty_path(self):
-        """Test parsing an empty path."""
-        column, models, joins = self.driver.parse_path('')
-
-        self.assertTrue(column is None)
-        self.assertTrue(models == [])
-        self.assertTrue(joins == [])

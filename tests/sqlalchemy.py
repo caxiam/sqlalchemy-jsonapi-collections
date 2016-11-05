@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from sqlalchemy import create_engine, event, ForeignKey
-from sqlalchemy import Column, Date, DateTime, Integer, String
+from sqlalchemy import Column, Date, DateTime, Enum, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from unittest import TestCase
@@ -51,6 +51,7 @@ class Person(Base):
     name = Column(String)
     age = Column(Integer)
     birth_date = Column(Date)
+    status = Column(Enum('active', 'inactive'), default='inactive')
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 

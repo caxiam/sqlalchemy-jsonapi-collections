@@ -5,7 +5,7 @@ from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapi_query import url
 from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
-from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyModelDriver
+from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyDriver
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
     MarshmallowJSONAPIDriver)
 from tests.marshmallow_jsonapi import Person as PersonSchema
@@ -16,7 +16,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
 
     def setUp(self):
         super().setUp()
-        self.m_driver = SQLAlchemyModelDriver(Person)
+        self.m_driver = SQLAlchemyDriver(Person)
         self.v_driver = MarshmallowJSONAPIDriver(PersonSchema)
 
         class BaseQuery(QueryMixin, Query):

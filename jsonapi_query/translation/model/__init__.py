@@ -1,18 +1,45 @@
-from abc import abstractmethod, ABCMeta
+from collections import namedtuple
 
 
-class BaseModelDriver(metaclass=ABCMeta):
+"""Query namedtuple.
+
+The `column` key contains a reference to the column to be filtered or
+sorted against.  The column is unnecessary for include operations.
+
+The `joins` key contains a list of relationship mappings.  The
+mappings are used to join the query against the appropriate foreign
+keys.  Joins are required for all operation types.
+
+The `selects` key contains a list of tables to select from. Selects
+are only used within include operations.
+"""
+Query = namedtuple('Query', ['column', 'joins', 'selects'])
+
+
+class BaseModelDriver(object):
     """Base model driver."""
 
-    def __init__(self, model, default_attribute='id'):
-        """Setup the driver.
+    @classmethod
+    def factory(cls, path, model, default_attribute='id'):
+        """Return a list of `Column` instances."""
+        if path == '':
+            return Query(None, [], [])
 
-        :param model: SQLAlchemy model reference.
-        """
-        self.model = model
-        self.default_attribute = default_attribute
+        relationships = path.split('.')
+        attribute = relationships.pop()
 
-    @abstractmethod
-    def parse_path(self, path):
-        """Parse a string path to a column attribute."""
-        return
+        joins = []
+        selects = []
+        for relationship in relationships:
+            column = cls(relationship, model)
+            joins.append(column.join)
+            model = column.related_class
+            selects.append(model)
+
+        column = cls(attribute, model)
+        if column.is_mapper:
+            joins.append(column.join)
+            model = column.related_class
+            selects.append(model)
+            column = cls(default_attribute, model)
+        return Query(column.column, joins, selects)
