@@ -7,7 +7,7 @@ from jsonapi_query import url
 from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
 from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyDriver
 from jsonapi_query.translation.view.marshmallow_jsonapi import (
-    MarshmallowJSONAPIDriver)
+    MarshmallowDriver)
 from tests.marshmallow_jsonapi import Person as PersonSchema
 from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
 
@@ -17,7 +17,7 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
     def setUp(self):
         super().setUp()
         self.m_driver = SQLAlchemyDriver(Person)
-        self.v_driver = MarshmallowJSONAPIDriver(PersonSchema)
+        self.v_driver = MarshmallowDriver(PersonSchema)
 
         class BaseQuery(QueryMixin, Query):
             pass

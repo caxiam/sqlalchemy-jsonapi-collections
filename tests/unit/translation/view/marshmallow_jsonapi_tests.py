@@ -1,98 +1,84 @@
 from datetime import date
 
-from jsonapi_query.errors import DataError, PathError
-from jsonapi_query.translation.view.marshmallow_jsonapi import (
-    MarshmallowJSONAPIDriver)
-from tests.marshmallow_jsonapi import (
-    BaseMarshmallowJSONAPITestCase, Person, School, Student)
+from jsonapi_query.translation.view.marshmallow_jsonapi import MarshmallowDriver
+from tests.marshmallow_jsonapi import *
 
 
 class MarshmallowJSONAPIViewTestCase(BaseMarshmallowJSONAPITestCase):
 
-    def setUp(self):
-        super().setUp()
-        self.driver = MarshmallowJSONAPIDriver(Person())
+    def test_column_name(self):
+        """Test `column_name` property."""
+        field = MarshmallowDriver('name', Person)
+        self.assertTrue(field.column_name == 'name')
 
-    def test_initialize_path(self):
-        """Test initializing a path."""
-        self.driver.initialize_path('student.school.title')
+        field = MarshmallowDriver('kids_name', Person)
+        self.assertTrue(field.column_name == 'name')
 
-        self.assertTrue(len(self.driver.fields) == 3)
-        self.assertTrue(
-            self.driver.field_names == ['student', 'school', 'name'])
-        schemas = [schema.__class__ for schema in self.driver.schemas]
-        self.assertTrue(schemas == [Student, School])
+    def test_related_class(self):
+        """Test `related_class` property."""
+        field = MarshmallowDriver('student', Person)
+        self.assertTrue(isinstance(field.related_class, Student))
 
-    def test_initialize_dasherized_path(self):
-        """Test initializing a dasherized path."""
-        self.driver.initialize_path('birth-date')
+    def test_is_relationship(self):
+        """Test `is_relationship` property."""
+        field = MarshmallowDriver('name', Person)
+        self.assertTrue(not field.is_relationship)
 
-        self.assertTrue(
-            self.driver.fields == [Person._declared_fields['birth_date']])
-        self.assertTrue(self.driver.field_names == ['birth_date'])
-        self.assertTrue(self.driver.schemas == [])
-
-    def test_initialize_empty_path(self):
-        """Test initializing an empty path."""
-        driver = self.driver.initialize_path('')
-        self.assertTrue(driver == self.driver)
-
-    def test_initializing_multiple_paths(self):
-        """Test initializing multiple paths."""
-        self.driver.initialize_path('student.school.title')
-        self.driver.initialize_path('birth-date')
-
-        self.assertTrue(
-            self.driver.fields == [Person._declared_fields['birth_date']])
-        self.assertTrue(self.driver.field_names == ['birth_date'])
-        self.assertTrue(self.driver.schemas == [])
-
-    def test_get_model_path(self):
-        """Test getting a model-safe path."""
-        self.driver.initialize_path('student.school.title')
-
-        path = self.driver.get_model_path()
-        self.assertTrue(path == 'student.school.name')
+        field = MarshmallowDriver('student', Person)
+        self.assertTrue(field.is_relationship)
 
     def test_deserialize_values(self):
         """Test deserializing a list of values."""
-        self.driver.initialize_path('birth-date')
-        values = self.driver.deserialize_values(['2014-01-01'])
+        field = MarshmallowDriver('birth_date', Person)
+        values = field.deserialize_values(['2014-01-01'])
         self.assertTrue(values == [date(2014, 1, 1)])
 
-        self.driver.initialize_path('student.school.title')
-        values = self.driver.deserialize_values(['PS #118'])
-        self.assertTrue(values == ['PS #118'])
+        field = MarshmallowDriver('age', Person)
+        values = field.deserialize_values(['10', 12, '00991'])
+        self.assertTrue(values == [10, 12, 991])
 
     def test_deserialize_value(self):
-        """Test deserializing a single value."""
-        self.driver.initialize_path('birth-date')
-        field = self.driver.fields[-1]
-
-        value = self.driver.deserialize_value(field, '2014-01-01')
+        """Test deserializing a value."""
+        field = MarshmallowDriver('birth_date', Person)
+        value = field.deserialize_value('2014-01-01')
         self.assertTrue(value == date(2014, 1, 1))
 
-    def test_get_invalid_attribute(self):
-        """Test retrieving an invalid attribute path."""
-        try:
-            self.driver.initialize_path('student.title')
-            self.assertTrue(False)
-        except PathError:
-            self.assertTrue(True)
+    def test_make_from_path(self):
+        """Test returning a set of fields from a dot-seperated path."""
+        fields = MarshmallowDriver.make_from_path('student.school.id', Person)
+        self.assertTrue(len(fields) == 3)
+        self.assertTrue(fields[0].field == Person._declared_fields['student'])
+        self.assertTrue(fields[1].field == Student._declared_fields['school'])
+        self.assertTrue(fields[2].field == School._declared_fields['id'])
 
-    def test_get_invalid_relationship(self):
-        """Test retrieving an invalid relationship path."""
-        try:
-            self.driver.initialize_path('birth-date.school')
-            self.assertTrue(False)
-        except PathError:
-            self.assertTrue(True)
+    def test_make_from_dasherized_path(self):
+        """Test returning a field from a dasherized input."""
+        fields = MarshmallowDriver.make_from_path('birth-date', Person)
+        self.assertTrue(len(fields) == 1)
+        self.assertTrue(fields[0].field == Person._declared_fields['birth_date'])
 
-    def test_deserialize_invalid_value(self):
-        """Test deserializing an invalid value."""
+    def test_send_to_path(self):
+        """Test returning a dot-seperated column path."""
+        fields = [
+            MarshmallowDriver('person', Student),
+            MarshmallowDriver('kids_name', Person)]
+        path = MarshmallowDriver.send_to_path(fields)
+        self.assertTrue(path == 'person.name')
+
+    def test_invalid_field(self):
+        """Test initializing an invalid field name."""
         try:
-            self.driver.initialize_path('birth-date')
-            self.driver.deserialize_values(['test'])
-            self.assertTrue(False)
-        except DataError:
+            MarshmallowDriver('unknown', Person)
+        except AttributeError:
             self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_invalid_relationship(self):
+        """Test getting a related schema with an invalid relationship."""
+        try:
+            MarshmallowDriver('id', Person).related_class
+        except AttributeError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)

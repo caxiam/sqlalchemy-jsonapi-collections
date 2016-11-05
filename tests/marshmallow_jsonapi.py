@@ -1,7 +1,4 @@
 """Base marshmallow-jsonapi test case module."""
-from marshmallow import class_registry
-from marshmallow.base import SchemaABC
-from marshmallow.compat import basestring
 from marshmallow_jsonapi import fields, Schema
 
 from tests.unit import UnitTestCase
@@ -15,6 +12,7 @@ def dasherize(text):
 class Person(Schema):
     id = fields.Integer()
     name = fields.String()
+    kids_name = fields.String(attribute='name')
     age = fields.Integer()
     birth_date = fields.Date()
     updated_at = fields.DateTime()

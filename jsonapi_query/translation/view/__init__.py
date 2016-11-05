@@ -1,32 +1,34 @@
-from abc import abstractmethod, ABCMeta
 
 
-class BaseViewDriver(metaclass=ABCMeta):
+class BaseViewDriver(object):
     """Base view driver."""
 
-    def __init__(self, view):
-        """Setup the view driver.
+    @classmethod
+    def make_from_path(cls, path, schema):
+        """Return a list of view driver instances."""
+        if path == '':
+            return []
 
-        :param view: Schema object reference.
-        """
-        self.view = view
+        relationships = cls.remove_inflection(path).split('.')
+        attribute = relationships.pop()
 
-    @abstractmethod
-    def initialize_path(self, path):
-        """Initialize a specified attribute path."""
-        return
+        fields = []
+        for relationship in relationships:
+            field = cls(relationship, schema)
+            fields.append(field)
+            schema = field.related_class
+        fields.append(cls(attribute, schema))
+        return fields
 
-    @abstractmethod
-    def get_model_path(self):
-        """Return a model-safe path."""
-        return
+    @classmethod
+    def send_to_path(cls, fields):
+        """Send a list of field instances to a string column-name path."""
+        column_names = []
+        for field in fields:
+            column_names.append(field.column_name)
+        return '.'.join(column_names)
 
-    @abstractmethod
-    def deserialize_values(self, values):
-        """Deserialize a set of values into their appropriate types."""
-        return
-
-    @abstractmethod
-    def deserialize_value(self, field, value):
-        """Deserialize a string value to the appropriate type."""
-        return
+    @staticmethod
+    def remove_inflection(text):
+        """Replace hyphens with underscores."""
+        return text.replace('-', '_')
