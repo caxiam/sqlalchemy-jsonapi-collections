@@ -2,8 +2,7 @@
 from datetime import date
 
 from jsonapi_query.drivers.model import SQLAlchemyDriver
-from tests.sqlalchemy import (
-    BaseSQLAlchemyTestCase, Person, School, Student, Category)
+from tests.sqlalchemy import *
 
 
 class SQLAlchemyDriverTestCase(BaseSQLAlchemyTestCase):
