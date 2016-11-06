@@ -3,6 +3,9 @@
 class BaseViewDriver(object):
     """Base view driver."""
 
+    def __repr__(self):
+        return '<Field name={}>'.format(self.key)
+
     @classmethod
     def make_from_path(cls, path, schema):
         """Return a list of view driver instances."""

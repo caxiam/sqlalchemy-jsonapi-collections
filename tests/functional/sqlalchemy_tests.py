@@ -3,21 +3,25 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query import url
+from jsonapi_query import JSONAPIQuery
 from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
-from jsonapi_query.translation.model.sqlalchemy import SQLAlchemyDriver
-from jsonapi_query.translation.view.marshmallow_jsonapi import (
-    MarshmallowDriver)
+from jsonapi_query.drivers.model import SQLAlchemyDriver
+from jsonapi_query.drivers.view import MarshmallowDriver
 from tests.marshmallow_jsonapi import Person as PersonSchema
-from tests.sqlalchemy import BaseSQLAlchemyTestCase, Person, School, Student
+from tests.sqlalchemy import *
+
+
+class SQLAQuery(JSONAPIQuery):
+    model_driver = SQLAlchemyDriver
+    view_driver = MarshmallowDriver
 
 
 class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
+    model = Person
+    view = PersonSchema
 
     def setUp(self):
         super().setUp()
-        self.m_driver = SQLAlchemyDriver(Person)
-        self.v_driver = MarshmallowDriver(PersonSchema)
 
         class BaseQuery(QueryMixin, Query):
             pass
@@ -44,182 +48,101 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         student = Student(school_id=2, person_id=2)
         self.session.add(student)
 
-    def test_filter_query(self):
-        """Test filtering a query by a url string."""
-        link = 'testsite.com/people?filter[age]=lt:10'
-        params = url.get_parameters(link)
+    def test_query_filter(self):
+        """Test filtering a query."""
+        queries = []
+        jquery = SQLAQuery({'filter[age]': 'lt:10'}, self.model, self.view)
+        for filter in jquery.make_filter_fields():
+            query = jquery.make_query_from_fields(filter.fields)
+            queries.append((query.column, filter.strategy, filter.values, query.joins))
 
-        filters = []
-        for fltr in url.get_filters(params):
-            self.v_driver.initialize_path(fltr[0])
-            path = self.v_driver.get_model_path()
-            values = self.v_driver.deserialize_values(fltr[2])
-            filters.append((path, fltr[1], values))
-
-        new = []
-        for fltr in filters:
-            column, models, joins = self.m_driver.parse_path(fltr[0])
-            new.append((column, fltr[1], fltr[2], joins))
-
-        models = self.session.query(Person).apply_filters(new).all()
+        models = self.session.query(Person).apply_filters(queries).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].age == 5)
 
-    def test_filter_query_deeply_nested(self):
-        """Test filtering a query by a deeply nested url string."""
-        link = 'testsite.com/people?filter[student.school.title]=eq:School'
-        params = url.get_parameters(link)
+    def test_query_complex_filter(self):
+        """Test filtering a query with complex requirements."""
+        params = {'filter[student.school.title]': 'eq:School'}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        filters = []
-        for fltr in url.get_filters(params):
-            self.v_driver.initialize_path(fltr[0])
-            path = self.v_driver.get_model_path()
-            values = self.v_driver.deserialize_values(fltr[2])
-            filters.append((path, fltr[1], values))
+        queries = []
+        for filter in jquery.make_filter_fields():
+            query = jquery.make_query_from_fields(filter.fields)
+            queries.append((query.column, filter.strategy, filter.values, query.joins))
 
-        new = []
-        for fltr in filters:
-            column, models, joins = self.m_driver.parse_path(fltr[0])
-            new.append((column, fltr[1], fltr[2], joins))
-
-        models = self.session.query(Person).apply_filters(new).all()
+        models = self.session.query(Person).apply_filters(queries).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
-    def test_sort_query(self):
-        """Test sorting by an attribute."""
-        link = 'testsite.com/people?sort=age'
-        params = url.get_parameters(link)
+    def test_query_sort(self):
+        """Test sorting a query."""
+        params = {'sort': '-age'}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        sorts = []
-        for sort in url.get_sorts(params):
-            self.v_driver.initialize_path(sort[0])
-            path = self.v_driver.get_model_path()
-            sorts.append((path, sort[1]))
+        queries = []
+        for sort in jquery.make_sort_fields():
+            query = jquery.make_query_from_fields(sort.fields)
+            queries.append((query.column, sort.direction, query.joins))
 
-        new = []
-        for sort in sorts:
-            column, models, joins = self.m_driver.parse_path(sort[0])
-            new.append((column, sort[1], joins))
-
-        models = self.session.query(Person).apply_sorts(new).all()
+        models = self.session.query(Person).apply_sorts(queries).all()
         self.assertTrue(len(models) == 2)
-        self.assertTrue(models[0].name == 'Fred')
+        self.assertTrue(models[1].name == 'Fred')
+        self.assertTrue(models[0].name == 'Carl')
 
-    def test_sort_query_deeply_nested(self):
-        """Test sorting by a deeply nested attribute."""
-        link = 'testsite.com/people?sort=-student.school.title'
-        params = url.get_parameters(link)
+    def test_query_complex_sort(self):
+        """Test sorting a query with complex requirements."""
+        params = {'sort': '-student.school.title'}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        sorts = []
-        for sort in url.get_sorts(params):
-            self.v_driver.initialize_path(sort[0])
-            path = self.v_driver.get_model_path()
-            sorts.append((path, sort[1]))
+        queries = []
+        for sort in jquery.make_sort_fields():
+            query = jquery.make_query_from_fields(sort.fields)
+            queries.append((query.column, sort.direction, query.joins))
 
-        new = []
-        for sort in sorts:
-            column, models, joins = self.m_driver.parse_path(sort[0])
-            new.append((column, sort[1], joins))
-
-        models = self.session.query(Person).apply_sorts(new).all()
+        models = self.session.query(Person).apply_sorts(queries).all()
         self.assertTrue(len(models) == 2)
         self.assertTrue(models[0].name == 'Fred')
         self.assertTrue(models[1].name == 'Carl')
 
     def test_paginate_query_by_limit(self):
         """Test paginating a query by the limit strategy."""
-        link = 'testsite.com/people?page[limit]=1&page[offset]=1'
-        params = url.get_parameters(link)
+        params = {'page[limit]': 1, 'page[offset]': 1}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        paginators = url.get_paginators(params)
-
-        models = self.session.query(Person).apply_paginators(paginators).all()
+        models = self.session.query(Person).apply_paginators(jquery.paginators).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
     def test_paginate_query_by_page(self):
         """Test paginating a query by the number strategy."""
-        link = 'testsite.com/people?page[size]=1&page[number]=2'
-        params = url.get_parameters(link)
+        params = {'page[size]': 1, 'page[number]': 2}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        paginators = url.get_paginators(params)
-
-        models = self.session.query(Person).apply_paginators(paginators).all()
+        models = self.session.query(Person).apply_paginators(jquery.paginators).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
-    def test_include_single_column(self):
-        """Test including a relationship."""
-        link = 'testsite.com/people?include=student'
-        params = url.get_parameters(link)
+    def test_query_complex_include(self):
+        """Test sorting a query with complex requirements."""
+        params = {'include': 'student.school,student'}
+        jquery = SQLAQuery(params, self.model, self.view)
 
-        includes = []
-        schemas = []
-        for include_ in url.get_includes(params):
-            self.v_driver.initialize_path(include_)
-            includes.append(self.v_driver.get_model_path())
-            schemas.extend(self.v_driver.schemas)
+        includes = jquery.make_include_fields()
+        query = jquery.make_query_from_fields(includes)
 
-        included_models = []
-        mappers = []
-        for include_ in includes:
-            _, models, joins = self.m_driver.parse_path(include_)
-            included_models.extend(models)
-            mappers.extend(joins)
-
-        items = self.session.query(
-            Person).filter_by(id=1).include(mappers).all()
-        items = group_and_remove(items, [Person] + included_models)[1:]
-        included = []
-        for position, columns in enumerate(items):
-            schema = schemas[position]
-            included.extend(schema.dump(columns, many=True).data['data'])
-
-        self.assertTrue(len(schemas) == 1)
-        self.assertTrue(len(included_models) == 1)
+        items = self.session.query(Person).filter_by(id=1).include(query.joins).all()
         self.assertTrue(len(items) == 1)
-        self.assertTrue(len(items[0]) == 1)
-        self.assertTrue(len(included) == 1)
+        self.assertTrue(len(items[0]) == 3)
 
-    def test_include_multiple_columns(self):
-        """Test including a list of relationships."""
-        def unique(items):
-            unqiues = []
-            for item in items:
-                if item not in unqiues:
-                    unqiues.append(item)
-            return unqiues
-
-        link = 'testsite.com/people?include=student.school,student'
-        params = url.get_parameters(link)
-
-        includes = []
-        schemas = []
-        for include_ in url.get_includes(params):
-            self.v_driver.initialize_path(include_)
-            includes.append(self.v_driver.get_model_path())
-            schemas.extend(self.v_driver.schemas)
-        schemas = unique(schemas)
-
-        included_models = []
-        mappers = []
-        for include_ in includes:
-            _, models, joins = self.m_driver.parse_path(include_)
-            included_models.extend(models)
-            mappers.extend(joins)
-        included_models = unique(included_models)
-
-        items = self.session.query(
-            Person).filter_by(id=1).include(mappers).all()
-        items = group_and_remove(items, [Person] + included_models)[1:]
+        items = group_and_remove(items, [Person] + query.selects)[1:]
+        schemas = jquery.make_schemas_from_fields(includes)
         included = []
         for position, columns in enumerate(items):
             schema = schemas[position]
             included.extend(schema.dump(columns, many=True).data['data'])
 
         self.assertTrue(len(schemas) == 2)
-        self.assertTrue(len(included_models) == 2)
+        self.assertTrue(len(query.selects) == 2)
         self.assertTrue(len(items) == 2)
         self.assertTrue(len(items[0]) == 1)
         self.assertTrue(len(included) == 2)
