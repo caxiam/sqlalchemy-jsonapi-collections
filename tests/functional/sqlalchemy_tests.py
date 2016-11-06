@@ -3,10 +3,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query import JSONAPIQuery
-from jsonapi_query.database.sqlalchemy import group_and_remove, QueryMixin
-from jsonapi_query.drivers.model import SQLAlchemyDriver
-from jsonapi_query.drivers.view import MarshmallowDriver
+from jsonapiquery import JSONAPIQuery
+from jsonapiquery.database.sqlalchemy import group_and_remove, QueryMixin
+from jsonapiquery.drivers.model import SQLAlchemyDriver
+from jsonapiquery.drivers.view import MarshmallowDriver
 from tests.marshmallow_jsonapi import Person as PersonSchema
 from tests.sqlalchemy import *
 
@@ -135,13 +135,12 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         self.assertTrue(len(items[0]) == 3)
 
         items = group_and_remove(items, [Person] + query.selects)[1:]
-        schemas = jquery.make_schemas_from_fields(includes)
         included = []
         for position, columns in enumerate(items):
-            schema = schemas[position]
+            schema = includes.schemas[position]
             included.extend(schema.dump(columns, many=True).data['data'])
 
-        self.assertTrue(len(schemas) == 2)
+        self.assertTrue(len(includes.schemas) == 2)
         self.assertTrue(len(query.selects) == 2)
         self.assertTrue(len(items) == 2)
         self.assertTrue(len(items[0]) == 1)

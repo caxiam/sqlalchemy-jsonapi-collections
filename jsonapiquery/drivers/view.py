@@ -4,7 +4,7 @@ class BaseViewDriver(object):
     """Base view driver."""
 
     def __repr__(self):
-        return '<Field name={}>'.format(self.key)
+        return 'Field(key="{}", view={})>'.format(self.key, self.view)
 
     @classmethod
     def make_from_path(cls, path, schema):

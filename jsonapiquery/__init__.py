@@ -1,6 +1,6 @@
 from collections import namedtuple, OrderedDict
 
-from jsonapi_query import url
+from jsonapiquery import url
 
 import functools
 
@@ -74,8 +74,10 @@ class JSONAPIQuery(object):
         includes = OrderedDict()
         for include in self.includes:
             fields = self.make_include_field(include)
-            includes.update(((field.key, field) for field in fields))
-        return list(includes.values())
+            includes.update(((str(field), field) for field in fields))
+
+        fields = list(includes.values())
+        return Includes(fields)
 
     def make_include_field(self, path):
         """Return a tuple of fields."""
@@ -88,3 +90,23 @@ class JSONAPIQuery(object):
     def make_query_from_fields(self, fields):
         """Return a `Query` tuple from a set of fields."""
         return self.model_driver.make_from_fields(fields, self.model)
+
+
+class Includes(object):
+
+    def __init__(self, fields):
+        self.fields = fields
+
+    def __len__(self):
+        return len(self.fields)
+
+    def __getitem__(self, index):
+        if index >= len(self):
+            raise IndexError
+        return self.fields[index]
+
+    @property
+    @functools.lru_cache()
+    def schemas(self):
+        """Return a list of schema instances."""
+        return [field.related_class for field in self.fields]

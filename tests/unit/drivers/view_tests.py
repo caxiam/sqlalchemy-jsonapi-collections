@@ -1,6 +1,6 @@
 from datetime import date
 
-from jsonapi_query.drivers.view import MarshmallowDriver
+from jsonapiquery.drivers.view import MarshmallowDriver
 from tests.marshmallow_jsonapi import *
 
 

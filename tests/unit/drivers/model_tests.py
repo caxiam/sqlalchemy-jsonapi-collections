@@ -1,7 +1,7 @@
 """SQLAlchemy model driver module."""
 from datetime import date
 
-from jsonapi_query.drivers.model import SQLAlchemyDriver
+from jsonapiquery.drivers.model import SQLAlchemyDriver
 from tests.sqlalchemy import *
 
 

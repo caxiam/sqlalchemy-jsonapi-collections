@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapi_query.database.sqlalchemy import (
+from jsonapiquery.database.sqlalchemy import (
     group_and_remove, include, QueryMixin)
 from tests.sqlalchemy import (
     BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
