@@ -177,7 +177,9 @@ def group_and_remove(items, models):
     :param items: A list of rows containing column tuples.
     :param models: A list of SQLAlchemy model classes.
     """
-    if items == [] or not isinstance(items[0], tuple):
+    if items == [None]:
+        return [[]]
+    elif items == [] or not isinstance(items[0], tuple):
         return [items]
 
     response = [[] for model in models]
@@ -230,49 +232,4 @@ def include(session, model, columns, joins, ids):
                 query = query.outerjoin(select, join)
                 selects.remove(select)
                 break
-    return group_by_column(query.all(), columns)
-
-
-def group_by_column(items, columns=[]):
-    """Group a tuple of different columns into lists of like columns.
-
-    Items is submitted as a list of tuples: [(1, 2), (3, 4)].  It is
-    returned as a list of lists: [[1, 3], [2, 4]].  The items are
-    grouped by their position within the tuple.
-
-    :param items: List of tuples.
-    :param columns: A list of SQLAlchemy model classes.
-    """
-    if items == []:
-        return []
-
-    if isinstance(items[0], tuple):
-        return _group_by_many(items, columns)
-    return _group_by_single(items)
-
-
-def _group_by_many(items, columns):
-    rows = []
-    for column in columns:
-        rows.append([])
-    for item in items:
-        for member in item:
-            if member is not None:
-                rows[columns.index(member.__class__)].append(member)
-    return [_unique(row) for row in rows]
-
-
-def _group_by_single(items):
-    rows = [[]]
-    for item in items:
-        if item is not None:
-            rows[0].append(item)
-    return _unique(rows)
-
-
-def _unique(items):
-    unqiues = []
-    for item in items:
-        if item not in unqiues:
-            unqiues.append(item)
-    return unqiues
+    return group_and_remove(query.all(), columns)
