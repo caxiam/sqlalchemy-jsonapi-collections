@@ -177,7 +177,9 @@ def group_and_remove(items, models):
     :param items: A list of rows containing column tuples.
     :param models: A list of SQLAlchemy model classes.
     """
-    if items == [] or not isinstance(items[0], tuple):
+    if items == [None]:
+        return [[]]
+    elif items == [] or not isinstance(items[0], tuple):
         return [items]
 
     response = [[] for model in models]
@@ -230,7 +232,7 @@ def include(session, model, columns, joins, ids):
                 query = query.outerjoin(select, join)
                 selects.remove(select)
                 break
-    return group_by_column(query.all(), columns)
+    return group_and_remove(query.all(), columns)
 
 
 def group_by_column(items, columns=[]):
