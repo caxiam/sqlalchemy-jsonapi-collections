@@ -77,6 +77,30 @@ class School(Base):
     name = Column(String)
 
 
+class Flower(Base):
+    __tablename__ = 'flower'
+
+    id = Column(Integer, primary_key=True)
+    kind = Column(
+        Enum('rose', name='flower_kind'), default='rose', nullable=False)
+    person_id = Column(Integer, ForeignKey('person.id'))
+
+    person = relationship('Person', backref='flowers')
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'flower',
+        'polymorphic_on': kind,
+        'with_polymorphic': '*'
+    }
+
+
+class Rose(Flower):
+    __tablename__ = 'flower_rose'
+    __mapper_args__ = {'polymorphic_identity': 'rose'}
+
+    id = Column(Integer, ForeignKey('flower.id'), primary_key=True)
+
+
 class BaseSQLAlchemyTestCase(TestCase):
     """Base SQLAlchemy test case.
 
