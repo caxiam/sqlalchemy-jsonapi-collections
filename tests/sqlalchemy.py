@@ -81,8 +81,9 @@ class Flower(Base):
     __tablename__ = 'flower'
 
     id = Column(Integer, primary_key=True)
-    kind = Column(
-        Enum('rose', name='flower_kind'), default='rose', nullable=False)
+    kind = Column(Enum(
+        'rose', 'sunflower', name='flower_kind'), default='rose',
+        nullable=False)
     person_id = Column(Integer, ForeignKey('person.id'))
 
     person = relationship('Person', backref='flowers')
@@ -97,6 +98,13 @@ class Flower(Base):
 class Rose(Flower):
     __tablename__ = 'flower_rose'
     __mapper_args__ = {'polymorphic_identity': 'rose'}
+
+    id = Column(Integer, ForeignKey('flower.id'), primary_key=True)
+
+
+class Sunflower(Flower):
+    __tablename__ = 'flower_sunflower'
+    __mapper_args__ = {'polymorphic_identity': 'sunflower'}
 
     id = Column(Integer, ForeignKey('flower.id'), primary_key=True)
 

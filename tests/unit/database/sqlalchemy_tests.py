@@ -5,8 +5,7 @@ from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapiquery.database.sqlalchemy import (
     group_and_remove, include, QueryMixin)
-from tests.sqlalchemy import (
-    BaseSQLAlchemyTestCase, Category, Person, Product, School, Student)
+from tests.sqlalchemy import *
 
 
 class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
@@ -338,6 +337,23 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(isinstance(items, list))
         self.assertTrue(isinstance(items[0], list))
         self.assertTrue(items == [[], []])
+
+    def test_include_polymorphic_model(self):
+        """Test including polymorphic relationships."""
+        rose = Rose(person_id=1, kind='rose')
+        self.session.add(rose)
+
+        sun = Sunflower(person_id=1, kind='sunflower')
+        self.session.add(sun)
+
+        items = include(
+            self.session, Person, [Flower], [Person.flowers], [1])
+        self.assertTrue(isinstance(items, list))
+        self.assertTrue(isinstance(items[0], list))
+
+        # Assert polymorphic subclasses are grouped together
+        self.assertTrue(isinstance(items[0][0], Rose))
+        self.assertTrue(isinstance(items[0][1], Sunflower))
 
 
 class UtilitySQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
