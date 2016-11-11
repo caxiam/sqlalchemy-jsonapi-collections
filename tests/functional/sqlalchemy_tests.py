@@ -52,8 +52,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         """Test filtering a query."""
         queries = []
         jquery = SQLAQuery({'filter[age]': 'lt:10'}, self.model, self.view)
-        for filter in jquery.make_filter_fields():
-            query = jquery.make_query_from_fields(filter.fields)
+        filters, errors = jquery.make_filter_fields()
+        for filter in filters:
+            query, driver = jquery.make_query_from_fields(filter.fields)
             queries.append((query.column, filter.strategy, filter.values, query.joins))
 
         models = self.session.query(Person).apply_filters(queries).all()
@@ -66,8 +67,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         jquery = SQLAQuery(params, self.model, self.view)
 
         queries = []
-        for filter in jquery.make_filter_fields():
-            query = jquery.make_query_from_fields(filter.fields)
+        filters, errors = jquery.make_filter_fields()
+        for filter in filters:
+            query, driver = jquery.make_query_from_fields(filter.fields)
             queries.append((query.column, filter.strategy, filter.values, query.joins))
 
         models = self.session.query(Person).apply_filters(queries).all()
@@ -80,8 +82,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         jquery = SQLAQuery(params, self.model, self.view)
 
         queries = []
-        for sort in jquery.make_sort_fields():
-            query = jquery.make_query_from_fields(sort.fields)
+        sorts, errors = jquery.make_sort_fields()
+        for sort in sorts:
+            query, driver = jquery.make_query_from_fields(sort.fields)
             queries.append((query.column, sort.direction, query.joins))
 
         models = self.session.query(Person).apply_sorts(queries).all()
@@ -95,8 +98,9 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         jquery = SQLAQuery(params, self.model, self.view)
 
         queries = []
-        for sort in jquery.make_sort_fields():
-            query = jquery.make_query_from_fields(sort.fields)
+        sorts, errors = jquery.make_sort_fields()
+        for sort in sorts:
+            query, driver = jquery.make_query_from_fields(sort.fields)
             queries.append((query.column, sort.direction, query.joins))
 
         models = self.session.query(Person).apply_sorts(queries).all()
@@ -127,8 +131,8 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         params = {'include': 'student.school,student'}
         jquery = SQLAQuery(params, self.model, self.view)
 
-        includes = jquery.make_include_fields()
-        query = jquery.make_query_from_fields(includes)
+        includes, errors = jquery.make_include_fields()
+        query, driver = jquery.make_query_from_fields(includes)
 
         items = self.session.query(Person).filter_by(id=1).include(query.joins).all()
         self.assertTrue(len(items) == 1)
@@ -153,3 +157,46 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         self.assertIn('id', included[1])
         self.assertIn('type', included[1])
         self.assertIn('attributes', included[1])
+
+    def test_query_filter_invalid_field(self):
+        """Test filtering a query with an invalid field."""
+        jquery = SQLAQuery({'filter[invalid]': 'lt:10'}, self.model, self.view)
+        filters, errors = jquery.make_filter_fields()
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0]['source']['parameter'] == 'filter[invalid]')
+
+    def test_query_filter_invalid_relationship(self):
+        """Test filtering a query with an invalid relationship field."""
+        jquery = SQLAQuery({'filter[age.id]': 'lt:10'}, self.model, self.view)
+        filters, errors = jquery.make_filter_fields()
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0]['source']['parameter'] == 'filter[age.id]')
+
+    def test_query_filter_invalid_field_value(self):
+        """Test filtering a query with an invalid field value."""
+        jquery = SQLAQuery({'filter[age]': '2014-10-10'}, self.model, self.view)
+        filters, errors = jquery.make_filter_fields()
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0]['source']['parameter'] == 'filter[age]')
+
+    def test_query_sort_invalid_field(self):
+        """Test sorting a query with an invalid field."""
+        jquery = SQLAQuery({'sort': 'invalid'}, self.model, self.view)
+        filters, errors = jquery.make_sort_fields()
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0]['source']['parameter'] == 'sort')
+
+    def test_query_sort_multiple_invalid_field(self):
+        """Test sorting a query with multiple invalid fields."""
+        jquery = SQLAQuery({'sort': 'invalid,fake'}, self.model, self.view)
+        filters, errors = jquery.make_sort_fields()
+        self.assertTrue(len(errors) == 2)
+        self.assertTrue(errors[0]['source']['parameter'] == 'sort')
+        self.assertTrue(errors[1]['source']['parameter'] == 'sort')
+
+    def test_query_include_invalid_field(self):
+        """Test including a query with an invalid field."""
+        jquery = SQLAQuery({'include': 'invalid'}, self.model, self.view)
+        filters, errors = jquery.make_include_fields()
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0]['source']['parameter'] == 'include')
