@@ -23,7 +23,7 @@ class BaseModelDriver(object):
     def make_from_fields(cls, fields, model, default_attribute='id'):
         """Return a `Query` tuple from a list of fields."""
         if len(fields) == 0:
-            return Query(None, [], [])
+            return Query(None, [], []), None
         names = [field.column_name for field in fields]
         return cls.make_from_names(names, model, default_attribute)
 
@@ -31,7 +31,7 @@ class BaseModelDriver(object):
     def make_from_path(cls, path, model, default_attribute='id'):
         """Return a `Query` tuple from a dot seperated path."""
         if path == '':
-            return Query(None, [], [])
+            return Query(None, [], []), None
         names = path.split('.')
         return cls.make_from_names(names, model, default_attribute)
 
