@@ -44,48 +44,68 @@ class JSONAPIQuery(object):
         """Return a list of page parameters paths."""
         return url.get_paginators(self.parameters)
 
+    def make_error(self, parameter, message):
+        """Return a JSONAPI compliant parameter error object."""
+        return {
+            'source': {'parameter': parameter},
+            'detail': message
+        }
+
     def make_filter_fields(self):
         """Return a list of parsed filters."""
-        filters = []
+        filters, errors = [], []
         for filter in self.filters:
-            filters.append(self.make_filter_field(*filter))
-        return filters
+            filter, error = self.make_filter_field(*filter)
+            filters.append(filter)
+            errors.extend(error)
+        return filters, errors
 
     def make_filter_field(self, path, strategy, values):
         """Return a tuple of fields, strategy, and typed values."""
-        fields = self.view_driver.make_from_path(path, self.view)
-        values = fields[-1].deserialize_values(values)
-        return Filter(fields, strategy, values)
+        try:
+            fields = self.view_driver.make_from_path(path, self.view)
+        except AttributeError as exc:
+            return None, [self.make_error('filter[{}]'.format(path), str(exc))]
+        try:
+            values = fields[-1].deserialize_values(values)
+        except Exception as exc:
+            return None, [self.make_error('filter[{}]'.format(path), str(exc))]
+        return Filter(fields, strategy, values), []
 
     def make_sort_fields(self):
         """Return a list of parsed sorts."""
-        sorts = []
+        sorts, errors = [], []
         for sort in self.sorts:
-            sorts.append(self.make_sort_field(*sort))
-        return sorts
+            sort, error = self.make_sort_field(*sort)
+            sorts.append(sort)
+            errors.extend(error)
+        return sorts, errors
 
     def make_sort_field(self, path, direction):
         """Return a tuple of fields, strategy, and typed values."""
-        fields = self.view_driver.make_from_path(path, self.view)
-        return Sort(fields, direction)
+        try:
+            fields = self.view_driver.make_from_path(path, self.view)
+            return Sort(fields, direction), []
+        except AttributeError as exc:
+            return None, [self.make_error('sort', str(exc))]
 
     def make_include_fields(self):
         """Return a list of parsed includes."""
-        includes = OrderedDict()
+        includes, errors = OrderedDict(), []
         for include in self.includes:
-            fields = self.make_include_field(include)
+            fields, error = self.make_include_field(include)
             includes.update(((str(field), field) for field in fields))
+            errors.extend(error)
 
         fields = list(includes.values())
-        return Includes(fields)
+        return Includes(fields), errors
 
     def make_include_field(self, path):
         """Return a tuple of fields."""
-        return self.view_driver.make_from_path(path, self.view)
-
-    def make_schemas_from_fields(self, fields):
-        """Return a list of schema instances."""
-        return [field.related_class for field in fields]
+        try:
+            return self.view_driver.make_from_path(path, self.view), []
+        except AttributeError as exc:
+            return [], [self.make_error('include', str(exc))]
 
     def make_query_from_fields(self, fields):
         """Return a `Query` tuple from a set of fields."""

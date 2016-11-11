@@ -38,8 +38,8 @@ class BaseViewDriver(object):
 
 
 class MarshmallowDriver(BaseViewDriver):
-    field_error = 'Invalid field "{}" specified.'
-    relationship_error = 'Invalid relationship "{}" specified.'
+    field_error = 'Field "{}" does not exist.'
+    relationship_error = 'Field "{}" is not a relationship.'
 
     def __init__(self, key, view):
         self.key = key

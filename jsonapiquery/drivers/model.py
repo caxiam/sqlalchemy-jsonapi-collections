@@ -55,7 +55,7 @@ class BaseModelDriver(object):
             model = column.related_class
             selects.append(model)
             column = cls(default_attribute, model)
-        return Query(column.column, joins, selects)
+        return Query(column.column, joins, selects), column
 
 
 class SQLAlchemyDriver(BaseModelDriver):
