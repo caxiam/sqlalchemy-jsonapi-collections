@@ -22,7 +22,7 @@ class BaseModelDriver(object):
     @classmethod
     def make_from_fields(cls, fields, model, default_attribute='id'):
         """Return a `Query` tuple from a list of fields."""
-        if fields == []:
+        if len(fields) == 0:
             return Query(None, [], [])
         names = [field.column_name for field in fields]
         return cls.make_from_names(names, model, default_attribute)
