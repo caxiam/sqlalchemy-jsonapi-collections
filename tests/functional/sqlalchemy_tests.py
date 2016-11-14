@@ -7,7 +7,7 @@ from jsonapiquery import JSONAPIQuery
 from jsonapiquery.database.sqlalchemy import group_and_remove, QueryMixin
 from jsonapiquery.drivers.model import SQLAlchemyDriver
 from jsonapiquery.drivers.view import MarshmallowDriver
-from tests.marshmallow_jsonapi import Person as PersonSchema
+from tests.marshmallow_jsonapi import Person as PersonSchema, Student as StudentSchema
 from tests.sqlalchemy import *
 
 
@@ -127,36 +127,68 @@ class SQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         self.assertTrue(models[0].name == 'Carl')
 
     def test_query_complex_include(self):
-        """Test sorting a query with complex requirements."""
-        params = {'include': 'student.school,student'}
+        """Test including a query with complex requirements."""
+        params = {'include': 'student.school'}
         jquery = SQLAQuery(params, self.model, self.view)
 
+        selects = []
+        mappers = []
+        schemas = []
         includes, errors = jquery.make_include_fields()
-        query, driver = jquery.make_query_from_fields(includes)
+        for include in includes:
+            query, driver = jquery.make_query_from_fields(include)
+            mappers.extend(query.joins)
+            selects.extend(query.selects)
+            schemas.extend(include.schemas)
 
-        items = self.session.query(Person).filter_by(id=1).include(query.joins).all()
+        mappers = list(set(mappers))
+        selects = list(set(selects))
+        schemas = list(set(schemas))
+
+        items = self.session.query(Person).filter_by(id=1).include(mappers).all()
+        self.assertTrue(len(items[0]) == 3)
+
+        items = group_and_remove(items, [Person] + selects)[1:]
+        included = []
+        for position, columns in enumerate(items):
+            schema = schemas[position]
+            included.extend(schema.dump(columns, many=True).data['data'])
+
+        self.assertTrue(len(schemas) == 2)
+        self.assertTrue(len(selects) == 2)
+        self.assertTrue(len(items) == 2)
+
+    def test_query_multiple_include(self):
+        """Test including multiple different types."""
+        params = {'include': 'person,school'}
+        jquery = SQLAQuery(params, Student, StudentSchema)
+
+        selects = []
+        mappers = []
+        schemas = []
+        includes, errors = jquery.make_include_fields()
+        for include in includes:
+            query, driver = jquery.make_query_from_fields(include)
+            mappers.extend(query.joins)
+            selects.extend(query.selects)
+            schemas.extend(include.schemas)
+
+        items = self.session.query(Student).filter_by(id=1).include(mappers).all()
         self.assertTrue(len(items) == 1)
         self.assertTrue(len(items[0]) == 3)
 
-        items = group_and_remove(items, [Person] + query.selects)[1:]
+        items = group_and_remove(items, [Student] + selects)[1:]
         included = []
         for position, columns in enumerate(items):
-            schema = includes.schemas[position]
+            schema = schemas[position]
             included.extend(schema.dump(columns, many=True).data['data'])
 
-        self.assertTrue(len(includes.schemas) == 2)
-        self.assertTrue(len(query.selects) == 2)
+        self.assertTrue(len(schemas) == 2)
+        self.assertTrue(len(selects) == 2)
         self.assertTrue(len(items) == 2)
         self.assertTrue(len(items[0]) == 1)
+        self.assertTrue(len(items[1]) == 1)
         self.assertTrue(len(included) == 2)
-
-        self.assertIn('id', included[0])
-        self.assertIn('type', included[0])
-        self.assertIn('relationships', included[0])
-
-        self.assertIn('id', included[1])
-        self.assertIn('type', included[1])
-        self.assertIn('attributes', included[1])
 
     def test_query_filter_invalid_field(self):
         """Test filtering a query with an invalid field."""

@@ -75,14 +75,14 @@ class SQLAlchemyDriverTestCase(BaseSQLAlchemyTestCase):
 
     def test_make_from_path(self):
         """Test `make_from_path` classmethod."""
-        components = SQLAlchemyDriver.make_from_path('person.name', Student)
+        components, driver = SQLAlchemyDriver.make_from_path('person.name', Student)
         self.assertTrue(components.column == Person.name)
         self.assertTrue(components.joins == [Student.person])
         self.assertTrue(components.selects == [Person])
 
     def test_make_from_path_default(self):
         """Test `make_from_path` classmethod default attribute."""
-        components = SQLAlchemyDriver.make_from_path('person', Student, 'status')
+        components, driver = SQLAlchemyDriver.make_from_path('person', Student, 'status')
         self.assertTrue(components.column == Person.status)
         self.assertTrue(components.joins == [Student.person])
         self.assertTrue(components.selects == [Person])
