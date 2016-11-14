@@ -91,14 +91,12 @@ class JSONAPIQuery(object):
 
     def make_include_fields(self):
         """Return a list of parsed includes."""
-        includes, errors = OrderedDict(), []
+        includes, errors = [], []
         for include in self.includes:
             fields, error = self.make_include_field(include)
-            includes.update(((str(field), field) for field in fields))
+            includes.append(Includes(fields))
             errors.extend(error)
-
-        fields = list(includes.values())
-        return Includes(fields), errors
+        return includes, errors
 
     def make_include_field(self, path):
         """Return a tuple of fields."""
