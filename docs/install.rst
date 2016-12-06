@@ -3,17 +3,8 @@
 Installation
 ============
 
-Tested with Python 2.7.
+Tested with Python 3.5.1.
 
 ::
 
     pip install git+git://github.com/caxiam/sqlalchemy-jsonapi-collections.git
-
-=============
-Dependencies:
-=============
-
-* Flask
-* Marshmallow
-* Marshmallow-JSONAPI
-* SQLAlchemy

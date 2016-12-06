@@ -3,54 +3,136 @@
 Quick Start
 ===========
 
-====================
-Managing Collections
-====================
+Setup
+=====
 
-To manage a query collection, instantiate a `Collection` object with the `model` and `parameters` arguments specified.
 
-::
+**Creating a session factory:**
 
-    from jsonapi_collections import Collection
-
-    params = {'sort': 'attr_1,attr_2', 'filter[attr_1]': 'test'}
-    c = Collection(my_model, params)
-
-You can optionally specify `driver` and `schema` arguments.  The driver acts as an intermediary between properity method calls.  The driver bindings supply a simple interface for the filter, sort, and include classes while also providing developers with the ability to use their own schema implementations.
-
-With your collection instantiated, we can now create query filters and sorts.
-
-**Filtering**
-
-To filter we call the `filter_query` method.
+Using SQLAlchemy as our example, import the "Query" class from SQLAlchemy and the "QueryMixin" class from the jsonapiquery database module.  Create a "BaseClass" and use it within the session factory "sessionmaker" function.
 
 ::
 
-    query = c.filter_query(query)
+    from jsonapiquery.database.sqlalchemy import QueryMixin
+    from sqlalchemy.orm import Query, sessionmaker
 
-This will return a permutated query object or raise a `JSONAPIError`.
 
-**Sorting**
+    class BaseQuery(QueryMixin, Query):
+        pass
 
-To sort we call the `sort_query` method.
 
-::
+    session_factory = sessionmaker(bind=engine, query_cls=BaseQuery)
+    session = session_factory()
 
-    query = c.sort_query(query)
+**Initializing JSONAPIQuery:**
 
-This will return a permutated query object or raise a `JSONAPIError`.
-
-================
-Creating Drivers
-================
-
-Drivers are a crucial part of the `jsonapi_collections` ecosystem.  To create your own driver for a custom schema implementation you need to complete the following:
-
-First, you must create a class the inherits from the `BaseDriver`.
-Second, you must override the unimplemented methods provided by the `BaseDriver`.
-
-Once you have a driver, you can pass a reference to the object in the `Collection` initialization process.  If the driver requires the use of a proprietary schema, then you need to pass that schema into the `Collection` object.
+To use the JSONAPIQuery class, you must first define a subclass of it with the "model_driver" and "view_driver" attributes defined.  With your newly created orchestration subclass, initialize the class with the requested query parameters, the model class to query from, and the view class to parse the request arguments with.
 
 ::
 
-    c = Collection(my_model, params, MyCustomDriver, my_optional_schema)
+    from jsonapiquery import JSONAPIQuery
+    from jsonapiquery.drivers.model import SQLAlchemyDriver
+    from jsonapiquery.drivers.view import MarshmallowDriver
+
+
+    class MyJSONAPIQuery(JSONAPIQuery):
+        model_driver = SQLAlchemyDriver
+        view_driver = MarshmallowDriver
+
+
+    jsonapiquery = MyJSONAPIQuery(query_parameters, PersonModel, PersonView)
+
+It should be noted that the orchestration object is entirely optional.  You do not have to use the drivers, the database mixin, or the URL parsing module.  Everything within this library is optional.
+
+Filtering
+=========
+
+**Loading filter field sets:**
+
+Initialize the JSONAPIQuery orchestration class with a parameters dictionary containing filters.  You must also specify the model to query from and the view to validate the parameters against.  The model and view can be any Python object from any library.
+
+::
+
+    jsonapiquery = JSONAPIQuery({'filter[age]': 'lt:10'}, model, view)
+    field_sets, errors = jsonapiquery.make_filter_fields()
+
+**Building query filters:**
+
+::
+
+    filters = []
+    for field_set in field_sets:
+        query, driver = jsonapiquery.make_query_from_fields(field_set.fields)
+        filters.append((query.column, field_set.strategy, field_set.values, query.joins))
+
+**Applying query filters:**
+
+::
+
+    # Using the SQLAlchemy database driver
+    response = session.query(AbcModel).apply_filters(filters).all()
+
+Sorting
+=======
+
+**Loading sort field sets:**
+
+::
+
+    jsonapiquery = JSONAPIQuery({'sort': 'last-name,first-name,-age'}, model, view)
+    field_sets, errors = jsonapiquery.make_sort_fields()
+
+**Building query sorts:**
+
+::
+
+    sorts = []
+    for field_set in field_sets:
+        query, driver = jsonapiquery.make_query_from_fields(field_set.fields)
+        sorts.append((query.column, field_set.direction, query.joins))
+
+**Applying query sorts:**
+
+::
+
+    # Using the SQLAlchemy database driver
+    response = session.query(AbcModel).apply_sorts(sorts).all()
+
+Compounding
+===========
+
+**Loading include field sets:**
+
+::
+
+    jsonapiquery = JSONAPIQuery({'include': 'student.school,parents'}, model, view)
+    field_sets, errors = jsonapiquery.make_include_fields()
+
+**Building query includes:**
+
+::
+
+    code
+
+**Applying query includes:**
+
+::
+
+    # Using the SQLAlchemy database driver
+    response = session.query(AbcModel).include(sorts).all()
+
+Pagination
+==========
+
+**Loading pagination field sets:**
+
+::
+
+    jsonapiquery = JSONAPIQuery({'page[limit]': 1, 'page[offset]': 1}, model, view)
+
+**Applying query pagination:**
+
+::
+
+    # Using the SQLAlchemy database driver
+    response = session.query(AbcModel).apply_paginators(jsonapiquery.paginators).all()
