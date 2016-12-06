@@ -1,4 +1,6 @@
-from collections import namedtuple, OrderedDict
+from abc import abstractmethod
+from collections import namedtuple
+from urllib.parse import urlencode
 
 from jsonapiquery import url
 
@@ -108,6 +110,119 @@ class JSONAPIQuery(object):
     def make_query_from_fields(self, fields):
         """Return a `Query` tuple from a set of fields."""
         return self.model_driver.make_from_fields(fields, self.model)
+
+    def make_included_response(self, response, models, schemas):
+        """Return a compounded response."""
+        included = self.serialize_included(models, schemas)
+        if included:
+            response['included'] = included
+        return response
+
+    @abstractmethod
+    def serialize_included(self, models, schemas):
+        """Return a serialized set of included objects.
+
+        Keyword arguments:
+            models (list): List of lists of like model instances.
+            schemas (lust): List of schemas instances.
+        """
+        return
+
+    def make_paginated_response(self, response, total):
+        """Return a paginated response."""
+        if total is not None:
+            links = self.make_pagination_links(self.parameters, total)
+            response['meta'] = {'total': total}
+            response['links'] = links
+        return response
+
+    def make_pagination_links(self, base_url, parameters, total):
+        """Return a dictionary of pagination links.
+
+        Based on the pagination strategy, calculate the correct limits
+        and offsets and encode the parameters into a URL safe format.
+        """
+        if 'page[number]' in parameters:
+            return self._paginate_number(base_url, parameters, total)
+        return self._paginate_offset(base_url, parameters, total)
+
+    def _paginate_offset(self, base_url, params, total):
+        limit, offset = 50, 0
+        for strategy, value in self.paginators:
+            if strategy == 'limit':
+                limit = int(value)
+            elif strategy == 'offset':
+                offset = int(value)
+
+        url = base_url + '?{}'
+        values = self._build_page_offset_values(total, limit, offset)
+        return {
+            'first': url.format(self._encode_page_offset(params, values[0])),
+            'last': url.format(self._encode_page_offset(params, values[1])),
+            'next': url.format(self._encode_page_offset(params, values[2])),
+            'prev': url.format(self._encode_page_offset(params, values[3])),
+            'self': base_url
+        }
+
+    def _paginate_number(self, base_url, params, total):
+        limit, page = 50, 1
+        for strategy, value in self.paginators:
+            if strategy == 'limit':
+                limit = int(value)
+            elif strategy == 'number':
+                page = int(value)
+
+        url = base_url + '?{}'
+        values = self._build_page_number_values(total, limit, page)
+        return {
+            'first': url.format(self._encode_page_number(params, values[0])),
+            'last': url.format(self._encode_page_number(params, values[1])),
+            'next': url.format(self._encode_page_number(params, values[2])),
+            'prev': url.format(self._encode_page_number(params, values[3])),
+            'self': base_url
+        }
+
+    def _build_page_offset_values(self, total, limit, offset):
+        """Return a tuple of offset values.
+
+        The response, in order of position, is `first`, `last`, `next`,
+        and `prev`.
+        """
+        return 0, max(total - limit, 0), offset + limit, max(offset - limit, 0)
+
+    def _build_page_number_values(self, total, limit, current):
+        """Return a tuple of page number values.
+
+        The response, in order of position, is `first`, `last`, `next`,
+        and `prev`.
+        """
+        return 1, max(total / limit, 1), current + 1, max(current - 1, 1)
+
+    def _encode_page_offset(self, params, value):
+        """Return encoded page[offset] parameters."""
+        return self._encode_parameters(params, 'page[offset]', value)
+
+    def _encode_page_number(self, params, value):
+        """Return encoded page[number] parameters."""
+        return self._encode_parameters(params, 'page[number]', value)
+
+    def _encode_parameters(self, params, key, value):
+        """Return a URL encoded parameter object."""
+        params = params.copy()
+        params[key] = value
+        return urlencode(params)
+
+    def _validate_paginators(self):
+        errors = []
+        for key, value in self.paginators:
+            errors.extend(self._validate_paginator(key, value))
+        return errors
+
+    def _validate_paginator(self, key, value):
+        error = 'Invalid value "{}" specified.'.format(value)
+        if not value.isdigit():
+            return [self.make_error('page[{}]'.format(key), error)]
+        return []
 
 
 class Includes(object):
