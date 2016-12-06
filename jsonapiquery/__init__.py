@@ -22,6 +22,65 @@ class JSONAPIQuery(object):
         self.model = model
         self.view = view
 
+    def make_query(self, query, options):
+        """Return a filtered, sorted, compounded, and paginated query or error.
+
+        Keyword arguments:
+            query: ORM query object.
+            options (dict): Option, boolean pairs.
+        """
+        total = None
+        selects = []
+        schemas = []
+
+        errors = []
+        if options.get('can_filter', True):
+            query, errors = self.filter(query, errors)
+        if options.get('can_sort', True):
+            query, errors = self.sort(query, errors)
+        if options.get('can_compound', True):
+            query, selects, schemas, errors = self.compound(query, errors)
+        if options.get('can_paginate', True):
+            query, total, errors = self.paginate(query, errors)
+
+        if errors:
+            raise self.make_errors(errors)
+        return query, total, selects, schemas
+
+    def make_included_response(self, response, models, schemas):
+        """Return a compounded response."""
+        included = self.serialize_included(models, schemas)
+        if included:
+            response['included'] = included
+        return response
+
+    def make_paginated_response(self, response, total):
+        """Return a paginated response."""
+        if total is not None:
+            links = self.make_pagination_links(self.parameters, total)
+            response['meta'] = {'total': total}
+            response['links'] = links
+        return response
+
+    @abstractmethod
+    def make_errors(self, errors):
+        """Return a JSONAPI exception class instance.
+
+        Keyword arguments:
+            errors (list): List of JSONAPI error objects.
+        """
+        return
+
+    @abstractmethod
+    def serialize_included(self, models, schemas):
+        """Return a serialized set of included objects.
+
+        Keyword arguments:
+            models (list): List of lists of like model instances.
+            schemas (lust): List of schemas instances.
+        """
+        return
+
     @property
     @functools.lru_cache()
     def filters(self):
@@ -212,65 +271,6 @@ class JSONAPIQuery(object):
     def make_query_from_fields(self, fields):
         """Return a `Query` tuple from a set of fields."""
         return self.model_driver.make_from_fields(fields, self.model)
-
-    def make_query(self, query, options):
-        """Return a handled query object or error.
-
-        Keyword arguments:
-            query: ORM query object.
-            options (dict): Option, boolean pairs.
-        """
-        total = None
-        selects = []
-        schemas = []
-
-        errors = []
-        if options.get('can_filter', True):
-            query, errors = self.filter(query, errors)
-        if options.get('can_sort', True):
-            query, errors = self.sort(query, errors)
-        if options.get('can_compound', True):
-            query, selects, schemas, errors = self.compound(query, errors)
-        if options.get('can_paginate', True):
-            query, total, errors = self.paginate(query, errors)
-
-        if errors:
-            raise self.make_errors(errors)
-        return query, total, selects, schemas
-
-    @abstractmethod
-    def make_errors(self, errors):
-        """Return a JSONAPI exception class instance.
-
-        Keyword arguments:
-            errors (list): List of JSONAPI error objects.
-        """
-        return
-
-    def make_included_response(self, response, models, schemas):
-        """Return a compounded response."""
-        included = self.serialize_included(models, schemas)
-        if included:
-            response['included'] = included
-        return response
-
-    @abstractmethod
-    def serialize_included(self, models, schemas):
-        """Return a serialized set of included objects.
-
-        Keyword arguments:
-            models (list): List of lists of like model instances.
-            schemas (lust): List of schemas instances.
-        """
-        return
-
-    def make_paginated_response(self, response, total):
-        """Return a paginated response."""
-        if total is not None:
-            links = self.make_pagination_links(self.parameters, total)
-            response['meta'] = {'total': total}
-            response['links'] = links
-        return response
 
     def make_pagination_links(self, base_url, parameters, total):
         """Return a dictionary of pagination links.
