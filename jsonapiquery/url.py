@@ -66,7 +66,7 @@ def _get_filter(key: str, value: str) -> tuple:
     return key[7:-1], strategy, values.split(',')
 
 
-def get_paginators(parameters: dict) -> dict:
+def get_paginators(parameters: dict) -> list:
     """Return a list of doubles to filter by.
 
     :param parameters: Dictionary of parameter name, value pairs.
