@@ -28,30 +28,19 @@ class JSONAPIQuery(object):
         """Return a list of filter parameters paths."""
         return url.get_filters(self.parameters)
 
-    @property
-    @functools.lru_cache()
-    def sorts(self):
-        """Return a list of sort paramter paths."""
-        return url.get_sorts(self.parameters)
+    def filter(self, query, global_errors=[]):
+        """Return a filtered query or a list of errors.
 
-    @property
-    @functools.lru_cache()
-    def includes(self):
-        """Return a list of include parameter paths."""
-        return url.get_includes(self.parameters)
-
-    @property
-    @functools.lru_cache()
-    def paginators(self):
-        """Return a list of page parameters paths."""
-        return url.get_paginators(self.parameters)
-
-    def make_error(self, parameter, message):
-        """Return a JSONAPI compliant parameter error object."""
-        return {
-            'source': {'parameter': parameter},
-            'detail': message
-        }
+        Keyword arguments:
+            query: ORM query object.
+            global_errors (list): List of error messages.
+        """
+        fields, errors = self.make_filter_fields()
+        if errors:
+            global_errors.extend(errors)
+            return query, global_errors
+        filters = self.make_query_filters(fields)
+        return query.apply_filters(filters), global_errors
 
     def make_filter_fields(self):
         """Return a list of parsed filters."""
@@ -74,6 +63,36 @@ class JSONAPIQuery(object):
             return None, [self.make_error('filter[{}]'.format(path), str(exc))]
         return Filter(fields, strategy, values), []
 
+    def make_query_filters(self, fields):
+        """Return a list of `filter` tuples."""
+        filters = []
+        for filter in fields:
+            component, driver = self.make_query_from_fields(filter.fields)
+            strategy = filter.strategy or driver.get_default_strategy()
+            filters.append((
+                component.column, strategy, filter.values, component.joins))
+        return filters
+
+    @property
+    @functools.lru_cache()
+    def sorts(self):
+        """Return a list of sort paramter paths."""
+        return url.get_sorts(self.parameters)
+
+    def sort(self, query, global_errors=[]):
+        """Return a sorted query or a list of errors.
+
+        Keyword arguments:
+            query: ORM query object.
+            global_errors (list): List of error messages.
+        """
+        fields, errors = self.make_sort_fields()
+        if errors:
+            global_errors.extend(errors)
+            return query, global_errors
+        sorts = self.make_query_sorts(fields)
+        return query.apply_sorts(sorts), global_errors
+
     def make_sort_fields(self):
         """Return a list of parsed sorts."""
         sorts, errors = [], []
@@ -91,6 +110,35 @@ class JSONAPIQuery(object):
         except AttributeError as exc:
             return None, [self.make_error('sort', str(exc))]
 
+    def make_query_sorts(self, fields):
+        """Return a list of `sort` tuples."""
+        sorts = []
+        for sort in fields:
+            component, driver = self.make_query_from_fields(sort.fields)
+            sorts.append((
+                component.column, sort.direction, component.joins))
+        return sorts
+
+    @property
+    @functools.lru_cache()
+    def includes(self):
+        """Return a list of include parameter paths."""
+        return url.get_includes(self.parameters)
+
+    def include(self, query, global_errors=[]):
+        """Return a compounded query or a list of errors.
+
+        Keyword arguments:
+            query: ORM query object.
+            global_errors (list): List of error messages.
+        """
+        fields, errors = self.make_include_fields()
+        if errors:
+            global_errors.extend(errors)
+            return query, [], [], global_errors
+        mappers, selects, schemas = self.make_query_includes(fields)
+        return query.include(mappers), selects, schemas, global_errors
+
     def make_include_fields(self):
         """Return a list of parsed includes."""
         includes, errors = [], []
@@ -107,9 +155,97 @@ class JSONAPIQuery(object):
         except AttributeError as exc:
             return [], [self.make_error('include', str(exc))]
 
+    def make_query_includes(self, fields):
+        """Return a list of `include` tuples."""
+        mappers, selects, schemas = [], [], []
+        for include_ in fields:
+            component, driver = self.make_query_from_fields(include_)
+            mappers.extend(component.joins)
+            selects.extend(component.selects)
+            schemas.extend(include_.schemas)
+        return mappers, selects, schemas
+
+    @property
+    @functools.lru_cache()
+    def paginators(self):
+        """Return a list of page parameters paths."""
+        return url.get_paginators(self.parameters)
+
+    def paginate(self, query, global_errors=[]):
+        """Return a paginated query or a list of errors.
+
+        Keyword arguments:
+            query: ORM query object.
+            global_errors (list): List of error messages.
+        """
+        errors = self._validate_paginators()
+        if errors:
+            global_errors.extend(errors)
+            return query, None, global_errors
+        total = query.count()
+        return query.apply_paginators(self.paginators), total, global_errors
+
+    def _validate_paginators(self):
+        errors = []
+        for key, value in self.paginators:
+            errors.extend(self._validate_paginator(key, value))
+        return errors
+
+    def _validate_paginator(self, key, value):
+        error = 'Invalid value "{}" specified.'.format(value)
+        if not value.isdigit():
+            return [self.make_error('page[{}]'.format(key), error)]
+        return []
+
+    def make_error(self, parameter, message):
+        """Return a JSONAPI compliant parameter error object.
+
+        Keyword arguments:
+            parameter (str): URL parameter name.
+            message (str): Human-readable error message.
+        """
+        return {
+            'source': {'parameter': parameter},
+            'detail': message
+        }
+
     def make_query_from_fields(self, fields):
         """Return a `Query` tuple from a set of fields."""
         return self.model_driver.make_from_fields(fields, self.model)
+
+    def make_query(self, query, options):
+        """Return a handled query object or error.
+
+        Keyword arguments:
+            query: ORM query object.
+            options (dict): Option, boolean pairs.
+        """
+        total = None
+        selects = []
+        schemas = []
+
+        errors = []
+        if options.get('can_filter', True):
+            query, errors = self.filter(query, errors)
+        if options.get('can_sort', True):
+            query, errors = self.sort(query, errors)
+        if options.get('can_compound', True):
+            query, selects, schemas, errors = self.compound(query, errors)
+        if options.get('can_paginate', True):
+            query, total, errors = self.paginate(query, errors)
+
+        if errors:
+            raise self.make_errors(errors)
+        return query, total, selects, schemas
+
+    @abstractmethod
+    def make_errors(self, errors):
+        """Return a JSONAPI exception class instance.
+
+        Keyword arguments:
+            errors (list): List of JSONAPI error objects.
+        """
+        return
 
     def make_included_response(self, response, models, schemas):
         """Return a compounded response."""
@@ -211,18 +347,6 @@ class JSONAPIQuery(object):
         params = params.copy()
         params[key] = value
         return urlencode(params)
-
-    def _validate_paginators(self):
-        errors = []
-        for key, value in self.paginators:
-            errors.extend(self._validate_paginator(key, value))
-        return errors
-
-    def _validate_paginator(self, key, value):
-        error = 'Invalid value "{}" specified.'.format(value)
-        if not value.isdigit():
-            return [self.make_error('page[{}]'.format(key), error)]
-        return []
 
 
 class Includes(object):
