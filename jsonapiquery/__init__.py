@@ -39,7 +39,7 @@ class JSONAPIQuery(object):
         if options.get('can_sort', True):
             query, errors = self.sort(query, errors)
         if options.get('can_compound', True):
-            query, selects, schemas, errors = self.compound(query, errors)
+            query, selects, schemas, errors = self.include(query, errors)
         if options.get('can_paginate', True):
             query, total, errors = self.paginate(query, errors)
 
@@ -49,7 +49,10 @@ class JSONAPIQuery(object):
 
     def make_included_response(self, response, models, schemas):
         """Return a compounded response."""
-        included = self.serialize_included(models, schemas)
+        included = []
+        for position, rows in enumerate(models):
+            output = self.serialize_included(schemas[position], models)
+            included.extend(output)
         if included:
             response['included'] = included
         return response
@@ -72,12 +75,12 @@ class JSONAPIQuery(object):
         return
 
     @abstractmethod
-    def serialize_included(self, models, schemas):
+    def serialize_included(self, schema, models):
         """Return a serialized set of included objects.
 
         Keyword arguments:
-            models (list): List of lists of like model instances.
-            schemas (lust): List of schemas instances.
+            schema: Serializer class instance.
+            models (list): List of model class instances.
         """
         return
 
