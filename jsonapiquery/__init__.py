@@ -51,16 +51,17 @@ class JSONAPIQuery(object):
         """Return a compounded response."""
         included = []
         for position, rows in enumerate(models):
-            output = self.serialize_included(schemas[position], models)
+            output = self.serialize_included(schemas[position], rows)
             included.extend(output)
         if included:
             response['included'] = included
         return response
 
-    def make_paginated_response(self, response, total):
+    def make_paginated_response(self, response, base_url, total):
         """Return a paginated response."""
         if total is not None:
-            links = self.make_pagination_links(self.parameters, total)
+            links = self.make_pagination_links(
+                base_url, self.parameters, total)
             response['meta'] = {'total': total}
             response['links'] = links
         return response
