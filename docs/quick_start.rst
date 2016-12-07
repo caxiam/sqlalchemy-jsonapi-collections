@@ -1,11 +1,11 @@
 .. _quick_start:
 
+***********
 Quick Start
-===========
+***********
 
 Setup
 =====
-
 
 **Creating a session factory:**
 
@@ -26,7 +26,7 @@ Using SQLAlchemy as our example, import the "Query" class from SQLAlchemy and th
 
 **Initializing JSONAPIQuery:**
 
-To use the JSONAPIQuery class, you must first define a subclass of it with the "model_driver" and "view_driver" attributes defined.  With your newly created orchestration subclass, initialize the class with the requested query parameters, the model class to query from, and the view class to parse the request arguments with.
+To use the JSONAPIQuery class, you must first define a subclass of it with the "model_driver" and "view_driver" attributes defined as well as the "make_errors", "serialize_included" abstractmethods.  With your newly created orchestration subclass, initialize the class with the requested query parameters, the model class to query from, and the view class to parse the request arguments with.
 
 ::
 
@@ -39,100 +39,120 @@ To use the JSONAPIQuery class, you must first define a subclass of it with the "
         model_driver = SQLAlchemyDriver
         view_driver = MarshmallowDriver
 
+        def make_errors(self, errors):
+            return MyExceptionClass(errors)
+
+        def serialize_included(self, schema, models):
+            return schema.dump(models, many=True).data['data']
+
 
     jsonapiquery = MyJSONAPIQuery(query_parameters, PersonModel, PersonView)
 
 It should be noted that the orchestration object is entirely optional.  You do not have to use the drivers, the database mixin, or the URL parsing module.  Everything within this library is optional.
 
+Quick Handling
+==============
+
+For quick JSONAPI query handling, the "make_query" method can be used to automatically handle parameter errors.  The "make_errors" method is used to raise the generated errors and the "serialize_included" method is used to serialized the included rows.
+
+"make_query" accepts two parameters: an ORM query object and a dictionary of query options.
+
+::
+
+    options = {
+        "can_compound": True,
+        "can_filter": False,
+        "can_paginate": False,
+        "can_sort": True
+    }
+    jsonapiquery = JSONAPIQuery({}, model, view)
+    return query, total, selects, schemas = jsonapiquery.make_query(query, options)
+
 Filtering
 =========
 
-**Loading filter field sets:**
-
-Initialize the JSONAPIQuery orchestration class with a parameters dictionary containing filters.  You must also specify the model to query from and the view to validate the parameters against.  The model and view can be any Python object from any library.
+The "filter" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
 
 ::
 
     jsonapiquery = JSONAPIQuery({'filter[age]': 'lt:10'}, model, view)
-    field_sets, errors = jsonapiquery.make_filter_fields()
-
-**Building query filters:**
-
-::
-
-    filters = []
-    for field_set in field_sets:
-        query, driver = jsonapiquery.make_query_from_fields(field_set.fields)
-        filters.append((query.column, field_set.strategy, field_set.values, query.joins))
-
-**Applying query filters:**
-
-::
-
-    # Using the SQLAlchemy database driver
-    response = session.query(AbcModel).apply_filters(filters).all()
+    query, errors = jsonapiquery.filter(query)
 
 Sorting
 =======
 
-**Loading sort field sets:**
+The "sort" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
 
 ::
 
     jsonapiquery = JSONAPIQuery({'sort': 'last-name,first-name,-age'}, model, view)
-    field_sets, errors = jsonapiquery.make_sort_fields()
+    query, errors = jsonapiquery.sort(query)
 
-**Building query sorts:**
+Including
+=========
 
-::
+The "include" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
 
-    sorts = []
-    for field_set in field_sets:
-        query, driver = jsonapiquery.make_query_from_fields(field_set.fields)
-        sorts.append((query.column, field_set.direction, query.joins))
-
-**Applying query sorts:**
-
-::
-
-    # Using the SQLAlchemy database driver
-    response = session.query(AbcModel).apply_sorts(sorts).all()
-
-Compounding
-===========
-
-**Loading include field sets:**
+Additionally, the "include" method returns a set of models and schemas.  These models and schemas are used to serailize the included relationships.
 
 ::
 
     jsonapiquery = JSONAPIQuery({'include': 'student.school,parents'}, model, view)
-    field_sets, errors = jsonapiquery.make_include_fields()
+    query, models, schemas, errors = jsonapiquery.include(query)
 
-**Building query includes:**
-
-::
-
-    code
-
-**Applying query includes:**
+Construction of the document can be done using the "make_included_response" method.  The method accepts three arguments: the response dictionary, the models to serialize and the schemas to serialize them with.
 
 ::
 
-    # Using the SQLAlchemy database driver
-    response = session.query(AbcModel).include(sorts).all()
+    models = [[<ModelA1>, <ModelA2>], [<ModelB1>]]
+    schemas = [<SchemaA()>, <SchemaB()>]
+    response = jsonapiquery.make_included_response({}, models, schemas)
+    """
+    The "included" list will contain each other the models
+    serialized by the appropriate schema.
 
-Pagination
+    response = {
+        'included': [
+            {'id': '1', 'type': 'teachers'},
+            {'id': '2', 'type': 'teachers'},
+            {'id': '1', 'type': 'students'}
+        ]
+    }
+    """
+
+Paginating
 ==========
 
-**Loading pagination field sets:**
+The "paginate" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
+
+Additionally, the "paginate" method returns a total value.  The total value is used to populate the "meta" object.
 
 ::
 
-    jsonapiquery = JSONAPIQuery({'page[limit]': 1, 'page[offset]': 1}, model, view)
+    jsonapiquery = JSONAPIQuery({"page[limit]": 1, "page[offset]": 2}, model, view)
+    query, total, errors = jsonapiquery.paginate(query)
 
-**Applying query pagination:**
+Construction of the document can be done using the "make_paginated_response" method.  The method accepts three arguments: the response dictionary, the base request URL, and the row count.
 
 ::
 
-    # Using the SQLAlchemy database driver
-    response = session.query(AbcModel).apply_paginators(jsonapiquery.paginators).all()
+    base_url = "http://site.com/api/v1/endpoint"
+    total = 1000
+    response = jsonapiquery.make_paginated_response({"data": []}, base_url, total)
+    """
+    The "links" object and "meta" object have been added to the
+    provided response object.  In a machine generated result, the
+    individual URLs will be encoded.
+
+    response = {
+        "links": {
+            "first": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=0",
+            "last": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=999",
+            "next": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=3",
+            "prev": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=1",
+            "self": "http://site.com/api/v1/endpoint",
+        },
+        "meta": {"total": 1000},
+        "data": []
+    }
+    """
