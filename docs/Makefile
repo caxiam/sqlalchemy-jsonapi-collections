@@ -95,9 +95,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/sqlalchemy-jsonapi-collections.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/jsonapiquery.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/sqlalchemy-jsonapi-collections.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/jsonapiquery.qhc"
 
 .PHONY: applehelp
 applehelp:
@@ -114,8 +114,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/sqlalchemy-jsonapi-collections"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/sqlalchemy-jsonapi-collections"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/jsonapiquery"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/jsonapiquery"
 	@echo "# devhelp"
 
 .PHONY: epub
