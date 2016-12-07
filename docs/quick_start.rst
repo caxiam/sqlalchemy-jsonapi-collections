@@ -66,7 +66,26 @@ For quick JSONAPI query handling, the "make_query" method can be used to automat
         "can_sort": True
     }
     jsonapiquery = JSONAPIQuery({}, model, view)
-    return query, total, selects, schemas = jsonapiquery.make_query(query, options)
+    query, total, selects, schemas = jsonapiquery.make_query(query, options)
+
+The outputs can be used to construct a response object.
+
+::
+
+    # base_url = 'http://site.com/api/v1/endpoint'
+    # total = 1000
+    # selects = [ModelB]
+    # schemas = [SchemaB]
+
+    models = group_and_remove(query.all(), selects + [self.model])
+    """Fetch the models and group them by their model type."""
+    response = {'data': self.view.dump(models.pop(), many=True).data['data']}
+    """Dump the primary model type to the "data" node."""
+    response = self.make_included_response(response, models, schemas)
+    """The remaining models are dumped to the "included" node."""
+    response = self.make_paginated_response(response, base_url, total)
+
+For more granular control, the documentation below describes the component parts of the "make_query" method.
 
 Filtering
 =========
