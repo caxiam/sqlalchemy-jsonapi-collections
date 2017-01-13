@@ -11,25 +11,27 @@ JSONAPIQuery
 
 .. autoclass:: jsonapiquery.JSONAPIQuery
     :inherited-members:
-    :private-members:
 
-Drivers
-=======
+Model Drivers
+=============
 
-.. automodule:: jsonapiquery.drivers
+.. automodule:: jsonapiquery.drivers.model
     :members:
-    :private-members:
 
-Database
-========
+View Drivers
+============
 
-.. automodule:: jsonapiquery.database
+.. automodule:: jsonapiquery.drivers.view
     :members:
-    :private-members:
+
+SQLAlchemy
+==========
+
+.. automodule:: jsonapiquery.database.sqlalchemy
+    :members:
 
 URL Parsing
 ===========
 
 .. automodule:: jsonapiquery.url
     :members:
-    :private-members:

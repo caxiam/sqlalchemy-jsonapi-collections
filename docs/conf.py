@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# sqlalchemy-jsonapi-collections documentation build configuration file, created by
+# jsonapiquery documentation build configuration file, created by
 # sphinx-quickstart on Mon Mar 28 10:25:48 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'sqlalchemy-jsonapi-collections'
+project = u'jsonapiquery'
 copyright = u'2016 Code Axis Inc. d/b/a Caxiam'
 author = u'Colton Allen'
 
@@ -125,7 +125,7 @@ html_theme = 'alabaster'
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'sqlalchemy-jsonapi-collections v0.1.0'
+#html_title = u'jsonapiquery v0.1.0'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -207,7 +207,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'sqlalchemy-jsonapi-collectionsdoc'
+htmlhelp_basename = 'jsonapiquerydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -229,7 +229,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'sqlalchemy-jsonapi-collections.tex', u'sqlalchemy-jsonapi-collections Documentation',
+    (master_doc, 'jsonapiquery.tex', u'jsonapiquery Documentation',
      u'Colton Allen', 'manual'),
 ]
 
@@ -259,7 +259,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'sqlalchemy-jsonapi-collections', u'sqlalchemy-jsonapi-collections Documentation',
+    (master_doc, 'jsonapiquery', u'jsonapiquery Documentation',
      [author], 1)
 ]
 
@@ -273,8 +273,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'sqlalchemy-jsonapi-collections', u'sqlalchemy-jsonapi-collections Documentation',
-     author, 'sqlalchemy-jsonapi-collections', 'One line description of project.',
+    (master_doc, 'jsonapiquery', u'jsonapiquery Documentation',
+     author, 'jsonapiquery', 'One line description of project.',
      'Miscellaneous'),
 ]
 
