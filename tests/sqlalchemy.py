@@ -42,6 +42,12 @@ class Product(Base):
         foreign_keys=[secondary_category_id])
 
 
+class Image(Base):
+    __tablename__ = "image"
+
+    id = Column(Integer, primary_key=True)
+
+
 class Person(Base):
     """Mock person table."""
 
@@ -52,7 +58,10 @@ class Person(Base):
     age = Column(Integer)
     birth_date = Column(Date)
     status = Column(Enum('active', 'inactive'), default='inactive')
+    image_id = Column(Integer, ForeignKey('image.id'))
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    image = relationship('Image', backref='person')
 
 
 class Student(Base):
@@ -75,6 +84,9 @@ class School(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    image_id = Column(Integer, ForeignKey('image.id'))
+
+    image = relationship('Image', backref='school')
 
 
 class Flower(Base):

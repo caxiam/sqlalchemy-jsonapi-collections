@@ -156,7 +156,30 @@ class QueryMixin(BaseQueryMixin):
 
         selects = [aliased(_get_mapper_class(mapper)) for mapper in mappers]
         for pos, select in enumerate(selects):
-            self = self.outerjoin(select, mappers[pos]).add_entity(select)
+            prev = pos - 1
+            if prev >= 0:
+                """Try to determine if we're chaining "includes".  If we
+                are we want to join against the aliased class's mapper
+                instead of the non-aliased class's mapper.
+
+                This is typically unnecessary, however, there are instances
+                where this is crucial.  In the instance where you are
+                joining different relationships to the same table, this
+                logic is necessary in order to join properly.
+
+                We check the previous "select"'s class.  If that class is
+                equal to the current mapper's class, we use the aliased
+                select's relationship to configure the join.
+                """
+                model = selects[prev]._aliased_insp.class_
+                if model == mappers[pos].class_:
+                    relationship_name = str(mappers[pos]).split('.')[1]
+                    join = getattr(selects[prev], relationship_name)
+                else:
+                    join = mappers[pos]
+            else:
+                join = mappers[pos]
+            self = self.outerjoin(select, join).add_entity(select)
         return self
 
     def _alias_mappers(self, column, mappers):

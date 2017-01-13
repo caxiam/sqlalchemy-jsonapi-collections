@@ -21,17 +21,22 @@ class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
         self.session = sessionmaker(bind=self.engine, query_cls=BaseQuery)()
         self.session.begin_nested()
 
+        image_1 = Image()
+        self.session.add(image_1)
+        image_2 = Image()
+        self.session.add(image_2)
+
         date = datetime.strptime('2014-01-01', "%Y-%m-%d").date()
-        fred = Person(name='Fred', age=5, birth_date=date)
+        fred = Person(name='Fred', age=5, birth_date=date, image=image_1)
         self.session.add(fred)
 
         date = datetime.strptime('2015-01-01', "%Y-%m-%d").date()
-        carl = Person(name='Carl', age=10, birth_date=date)
+        carl = Person(name='Carl', age=10, birth_date=date, image=image_1)
         self.session.add(carl)
 
-        school = School(name='School')
+        school = School(name='School', image=image_2)
         self.session.add(school)
-        school = School(name='College')
+        school = School(name='College', image=image_2)
         self.session.add(school)
 
         student = Student(school_id=1, person_id=1)
@@ -249,6 +254,17 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(isinstance(models[1], Student))
         self.assertTrue(isinstance(models[2], School))
 
+    def test_include_convergent_nested(self):
+        """Test including convergent nested columns."""
+        models = self.session.query(Student).include([
+            Student.person, Person.image, Student.school,
+            School.image]).first()
+        self.assertTrue(isinstance(models[0], Student))
+        self.assertTrue(isinstance(models[1], Person))
+        self.assertTrue(isinstance(models[2], Image))
+        self.assertTrue(isinstance(models[3], School))
+        self.assertTrue(isinstance(models[4], Image))
+
     def test_include_self_referential_relationship(self):
         """Test including a self-referential relationship."""
         a = Category(name='Category A')
@@ -319,6 +335,18 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.assertTrue(isinstance(items, list))
         self.assertTrue(isinstance(items[0], list))
         self.assertTrue(isinstance(items[0][0], Category))
+
+    def test_include_from_model_convergent_relationships(self):
+        """Test including convergent relationships."""
+        items = include(
+            self.session, Student, [Person, School, Image],
+            [Student.person, Person.image, Student.school, School.image], [1])
+        self.assertTrue(isinstance(items, list))
+        self.assertTrue(isinstance(items[0], list))
+        self.assertTrue(isinstance(items[0][0], Person))
+        self.assertTrue(isinstance(items[1][0], School))
+        self.assertTrue(isinstance(items[2][0], Image))
+        self.assertTrue(isinstance(items[2][1], Image))
 
     def test_include_from_model_without_relationship(self):
         """Test including from a model when no relationship exists."""
