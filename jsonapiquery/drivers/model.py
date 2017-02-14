@@ -98,10 +98,11 @@ class SQLAlchemyDriver(BaseModelDriver):
         However, in instances where the mapper is self-referential, it
         is important to join on the backref or back-populates key.
         """
-        if self.related_class == self.model:
-            if self.column.property.backref:
-                return getattr(self.model, self.column.property.backref)
-            return getattr(self.model, self.column.property.back_populates)
+        # Re evaluating self-referential logic.
+        # if self.related_class == self.model:
+        #     if self.column.property.backref:
+        #         return getattr(self.model, self.column.property.backref)
+        #     return getattr(self.model, self.column.property.back_populates)
         return self.column
 
     @property

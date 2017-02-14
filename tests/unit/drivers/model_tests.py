@@ -68,10 +68,10 @@ class SQLAlchemyDriverTestCase(BaseSQLAlchemyTestCase):
         self.assertTrue(column.join is Student.person)
 
         column = SQLAlchemyDriver('category', Category)
-        self.assertTrue(column.join is Category.categories)
+        self.assertTrue(column.join is Category.category)
 
         column = SQLAlchemyDriver('categories', Category)
-        self.assertTrue(column.join is Category.category)
+        self.assertTrue(column.join is Category.categories)
 
     def test_make_from_path(self):
         """Test `make_from_path` classmethod."""
