@@ -275,7 +275,8 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.session.add(c)
 
         models = self.session.query(Category).filter(Category.id == 2).include(
-            [Category.category, Category.categories]).first()
+            [Category.category, Category.categories]).all()
+        models = models[0]
         self.assertTrue(len(models) == 3)
 
         self.assertTrue(isinstance(models[0], Category))
