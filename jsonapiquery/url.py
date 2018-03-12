@@ -1,82 +1,64 @@
-"""."""
-from urllib.parse import parse_qsl, urlparse
+import collections
+import contextlib
 
 
-STRATEGIES = ['eq', 'gt', 'gte', 'lt', 'lte', 'in', 'like', 'ilike']
-STRATEGY_PARTITION = ':'
+FieldSet = collections.namedtuple('FieldSet', ['source', 'type', 'fields'])
+Filter = collections.namedtuple('Filter', ['source', 'relationships', 'attribute', 'value'])
+Include = collections.namedtuple('Include', ['source', 'relationships'])
+Sort = collections.namedtuple('Sort', ['source', 'relationships', 'attribute', 'direction'])
+Paginator = collections.namedtuple('Paginator', ['source', 'strategy', 'value'])
 
 
-def get_parameters(url: str) -> dict:
-    """Convert a URL into a dictionary of parameter, value pairs."""
-    parsed_url = urlparse(url)
-    return {key: value for key, value in parse_qsl(parsed_url.query)}
+def iter_fieldsets(params: dict):
+    """Return a generator of fieldset instructions."""
+    for key, value in iter_namespace(params, 'fields'):
+        yield FieldSet('fields[{}]'.format(key), key, value.split(','))
 
 
-def get_includes(parameters: dict) -> list:
-    """Return a list of relationships to include.
+def iter_filters(params: dict):
+    """Return a generator of filter instructions."""
+    for key, value in iter_namespace(params, 'filter'):
+        relationships = key.split('.')
+        try:
+            attribute = relationships.pop()
+        except IndexError:
+            attribute = None
+        yield Filter('filter[{}]'.format(key), relationships, attribute, value)
 
-    :param parameters: Dictionary of parameter name, value pairs.
-    """
-    return parameters.get('include', '').split(',')
+
+def iter_paginators(params: dict):
+    """Return a generator of pagination instructions."""
+    for key, value in iter_namespace(params, 'page'):
+        yield Paginator('page[{}]'.format(key), key, value)
 
 
-def get_sorts(parameters: dict) -> list:
-    """Return a list of doubles to sort by.
+def iter_includes(params: dict):
+    """Return a generator of include instructions."""
+    includes = params.get('include', '')
+    includes = includes.split(',')
+    for include in includes:
+        yield Include('include', include.split('.'))
 
-    :param parameters: Dictionary of parameter name, value pairs.
-    """
-    sorts = []
-    for sort in parameters.get('sort', '').split(','):
+
+def iter_sorts(params: dict):
+    """Return a generator of sort instructions."""
+    sorts = params.get('sort', '')
+    sorts = sorts.split(',')
+    for sort in sorts:
+        direction = '+'
         if sort.startswith('-') or sort.startswith('+'):
-            sorts.append((sort[1:], sort[:1]))
-        elif sort != '':
-            sorts.append((sort, '+'))
-    return sorts
+            direction, sort = sort[0], sort[1:]
+
+        relationships = sort.split('.')
+        try:
+            attribute = relationships.pop()
+        except IndexError:
+            attribute = None
+        yield Sort('sort', relationships, attribute, direction)
 
 
-def get_filters(parameters: dict) -> list:
-    """Return a list of triples to filter by.
-
-    :param parameters: Dictionary of parameter name, value pairs.
-    """
-    filters = []
-    for parameter, value in parameters.items():
-        if parameter.startswith('filter[') and parameter.endswith(']'):
-            filters.append(_get_filter(parameter, value))
-    return filters
-
-
-def _get_filter(key: str, value: str) -> tuple:
-    """Return a triple to filter by."""
-    strategy, partition, values = value.partition(STRATEGY_PARTITION)
-
-    negated = strategy.startswith('~')
-    if negated:
-        strategy = strategy[1:]
-
-    if partition == '':
-        values = strategy
-        strategy = None
-    elif strategy not in STRATEGIES:
-        values = ''.join((strategy, partition, values))
-        strategy = None
-
-    if negated:
-        strategy = '~{}'.format(strategy)
-    return key[7:-1], strategy, values.split(',')
-
-
-def get_paginators(parameters: dict) -> list:
-    """Return a list of doubles to filter by.
-
-    :param parameters: Dictionary of parameter name, value pairs.
-    """
-    paginators = []
-    for key, value in parameters.items():
-        if key in ['page[size]', 'page[limit]']:
-            paginators.append(('limit', value))
-        elif key == 'page[offset]':
-            paginators.append(('offset', value))
-        elif key == 'page[number]':
-            paginators.append(('number', value))
-    return paginators
+def iter_namespace(params: dict, namespace: str):
+    """Return a generator of namespaced instructions."""
+    for key, value in params.items():
+        if key.startswith('{}['.format(namespace)) and key.endswith(']'):
+            yield key[len(namespace) + 1: -1], value
