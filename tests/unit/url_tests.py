@@ -16,7 +16,11 @@ class URLTestCase(UnitTestCase):
         self.assertTrue(field.fields == ['age', 'birthday', 'first-name'])
 
     def test_iter_filters(self):
-        params = {'filter[user.email.email-address]': 'a@b.com'}
+        params = {
+            'filter[user.email.email-address]': 'a@b.com',
+            'filter[age]': '12',
+            'filter[]': ''
+        }
         filters = url.iter_filters(params)
 
         filter = next(filters)
@@ -25,8 +29,17 @@ class URLTestCase(UnitTestCase):
         self.assertTrue(filter.attribute == 'email-address')
         self.assertTrue(filter.value == 'a@b.com')
 
+        filter = next(filters)
+        self.assertTrue(filter.source == 'filter[age]')
+        self.assertTrue(filter.relationships == [])
+        self.assertTrue(filter.attribute == 'age')
+        self.assertTrue(filter.value == '12')
+
+        # Assert skips invalid filter.
+        assert_raises(StopIteration, next, filters)
+
     def test_iter_paginators(self):
-        params = {'page[limit]': '100'}
+        params = {'page[limit]': '100', 'page[xyz]': '0'}
         paginators = url.iter_paginators(params)
 
         paginator = next(paginators)
@@ -34,8 +47,11 @@ class URLTestCase(UnitTestCase):
         self.assertTrue(paginator.strategy == 'limit')
         self.assertTrue(paginator.value == '100')
 
+        # Assert skips invalid paginator.
+        assert_raises(StopIteration, next, paginators)
+
     def test_iter_includes(self):
-        params = {'include': 'user.email,contacts'}
+        params = {'include': 'user.email,contacts,'}
         includes = url.iter_includes(params)
 
         include = next(includes)
@@ -46,8 +62,11 @@ class URLTestCase(UnitTestCase):
         self.assertTrue(include.source == 'include')
         self.assertTrue(include.relationships == ['contacts'])
 
+        # Assert skips empty include.
+        assert_raises(StopIteration, next, includes)
+
     def test_iter_sorts(self):
-        params = {'sort': '+a.b,-c.d,e'}
+        params = {'sort': '+a.b,-c.d,e,'}
         sorts = url.iter_sorts(params)
 
         sort = next(sorts)
@@ -67,6 +86,9 @@ class URLTestCase(UnitTestCase):
         self.assertTrue(sort.direction == '+')
         self.assertTrue(sort.relationships == [])
         self.assertTrue(sort.attribute == 'e')
+
+        # Assert skips empty include.
+        assert_raises(StopIteration, next, sorts)
 
     def test_iter_namespace(self):
         params = {'fields[a]': 'b', 'filter[c]': 'd'}

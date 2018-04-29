@@ -18,17 +18,18 @@ def iter_fieldsets(params: dict):
 def iter_filters(params: dict):
     """Return a generator of filter instructions."""
     for key, value in iter_namespace(params, 'filter'):
+        if key == '':
+            continue
         relationships = key.split('.')
-        try:
-            attribute = relationships.pop()
-        except IndexError:
-            attribute = None
+        attribute = relationships.pop()
         yield Filter('filter[{}]'.format(key), relationships, attribute, value)
 
 
 def iter_paginators(params: dict):
     """Return a generator of pagination instructions."""
     for key, value in iter_namespace(params, 'page'):
+        if key not in ['number', 'size', 'offset', 'limit', 'cursor']:
+            continue
         yield Paginator('page[{}]'.format(key), key, value)
 
 
@@ -37,6 +38,8 @@ def iter_includes(params: dict):
     includes = params.get('include', '')
     includes = includes.split(',')
     for include in includes:
+        if include == '':
+            continue
         yield Include('include', include.split('.'))
 
 
@@ -45,15 +48,15 @@ def iter_sorts(params: dict):
     sorts = params.get('sort', '')
     sorts = sorts.split(',')
     for sort in sorts:
+        if sort == '':
+            continue
+
         direction = '+'
         if sort.startswith('-') or sort.startswith('+'):
             direction, sort = sort[0], sort[1:]
 
         relationships = sort.split('.')
-        try:
-            attribute = relationships.pop()
-        except IndexError:
-            attribute = None
+        attribute = relationships.pop()
         yield Sort('sort', relationships, attribute, direction)
 
 
