@@ -1,9 +1,7 @@
-from jsonapiquery import errors
-
-from . import remove_inflection, SchemaDriverBase
+from jsonapiquery.drivers import DriverBase
 
 
-class SchemaDriverMarshmallow(SchemaDriverBase):
+class DriverSchemaMarshmallow(DriverBase):
 
     def parse_attribute(self, field_name, schema):
         return Attribute(field_name, schema)
@@ -12,12 +10,16 @@ class SchemaDriverMarshmallow(SchemaDriverBase):
         return Relationship(field_name, schema)
 
 
-class Field(object):
+class Field:
 
     def __init__(self, field_name, schema):
-        self.field_name = remove_inflection(field_name)
+        self.field_name = self.normalize_text(field_name)
         self.schema = schema
         self.field = self.schema.declared_fields[field_name]
+
+    @property
+    def model_attribute(self):
+        return self.field.attribute or self.field_name
 
 
 class Attribute(Field):

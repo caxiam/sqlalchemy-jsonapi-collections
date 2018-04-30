@@ -1,12 +1,4 @@
-import collections
-import contextlib
-
-
-FieldSet = collections.namedtuple('FieldSet', ['source', 'type', 'fields'])
-Filter = collections.namedtuple('Filter', ['source', 'relationships', 'attribute', 'value'])
-Include = collections.namedtuple('Include', ['source', 'relationships'])
-Sort = collections.namedtuple('Sort', ['source', 'relationships', 'attribute', 'direction'])
-Paginator = collections.namedtuple('Paginator', ['source', 'strategy', 'value'])
+from jsonapiquery.types import FieldSet, Filter, Include, Sort, Paginator
 
 
 def iter_fieldsets(params: dict):
