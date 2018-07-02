@@ -1,7 +1,7 @@
 """Base SQLAlchemy test case module."""
 from datetime import datetime
 
-from sqlalchemy import create_engine, event, ForeignKey
+from sqlalchemy import create_engine, event, ForeignKey, orm
 from sqlalchemy import Column, Date, DateTime, Enum, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -119,6 +119,9 @@ class Sunflower(Flower):
     __mapper_args__ = {'polymorphic_identity': 'sunflower'}
 
     id = Column(Integer, ForeignKey('flower.id'), primary_key=True)
+
+
+orm.configure_mappers()
 
 
 class BaseSQLAlchemyTestCase(TestCase):

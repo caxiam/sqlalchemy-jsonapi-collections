@@ -21,7 +21,7 @@ Model Drivers
 View Drivers
 ============
 
-.. automodule:: jsonapiquery.drivers.view
+.. automodule:: jsonapiquery.drivers.schema
     :members:
 
 SQLAlchemy

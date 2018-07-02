@@ -3,7 +3,7 @@ from sqlalchemy.orm import Query, sessionmaker
 from jsonapiquery import JSONAPIQuery
 from jsonapiquery.database.sqlalchemy import QueryMixin
 from jsonapiquery.drivers.model import SQLAlchemyDriver
-from jsonapiquery.drivers.view import MarshmallowDriver
+from jsonapiquery.drivers.schema import MarshmallowDriver
 from tests.marshmallow_jsonapi import (
     Person as PersonSchema, Student as StudentSchema)
 from tests.sqlalchemy import (

@@ -32,7 +32,7 @@ To use the JSONAPIQuery class, you must first define a subclass of it with the "
 
     from jsonapiquery import JSONAPIQuery
     from jsonapiquery.drivers.model import SQLAlchemyDriver
-    from jsonapiquery.drivers.view import MarshmallowDriver
+    from jsonapiquery.drivers.schema import MarshmallowDriver
 
 
     class MyJSONAPIQuery(JSONAPIQuery):

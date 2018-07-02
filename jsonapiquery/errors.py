@@ -2,8 +2,41 @@ import json
 
 
 ERRORS = {
-    'KEY_PARSE_ERROR': {'code': 1, 'message': 'Could not parse key(s).'}
+    'KEY_PARSE_ERROR': {'code': 1, 'message': 'Could not parse key.'}
 }
+
+
+class ErrorHandler:
+    """Error collection management object."""
+
+    def __init__(self, strict=False):
+        """Initialize ErrorHandler object.
+
+        :param strict (bool): If strict raise errors without collection.
+        """
+        self.errors = []
+        self.strict = strict
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if not self.strict and isinstance(value, JSONAPIQueryError):
+            self.errors.append(value)
+            return True
+
+    def __iter__(self):
+        return iter(self.errors)
+
+    def __len__(self):
+        return len(self.errors)
+
+    def __str__(self):
+        return json.dumps(dict(self))
+
+    @property
+    def __dict__(self):
+        return make_error_response(self.errors)
 
 
 class JSONAPIQueryError(Exception):
@@ -44,4 +77,3 @@ class JSONAPIQueryError(Exception):
 def make_error_response(errors: list) -> dict:
     """Return a JSONAPI compliant error response."""
     return {'errors': [dict(error) for error in errors]}
-

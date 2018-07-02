@@ -15,11 +15,15 @@ class Field:
     def __init__(self, field_name, schema):
         self.field_name = self.normalize_text(field_name)
         self.schema = schema
-        self.field = self.schema.declared_fields[field_name]
+        self.field = self.schema.declared_fields[self.field_name]
 
     @property
     def model_attribute(self):
         return self.field.attribute or self.field_name
+
+    def normalize_text(self, field_name):
+        """Dedasherize field names."""
+        return field_name.replace('-', '_')
 
 
 class Attribute(Field):
