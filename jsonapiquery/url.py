@@ -1,13 +1,14 @@
 from jsonapiquery.types import FieldSet, Filter, Include, Sort, Paginator
+from typing import Any, Generator
 
 
-def iter_fieldsets(params: dict):
+def iter_fieldsets(params: dict) -> Generator[FieldSet, None, None]:
     """Return a generator of fieldset instructions."""
     for key, value in iter_namespace(params, 'fields'):
         yield FieldSet('fields[{}]'.format(key), key, value.split(','))
 
 
-def iter_filters(params: dict):
+def iter_filters(params: dict) -> Generator[Filter, None, None]:
     """Return a generator of filter instructions."""
     for key, value in iter_namespace(params, 'filter'):
         if key == '':
@@ -17,7 +18,7 @@ def iter_filters(params: dict):
         yield Filter('filter[{}]'.format(key), relationships, attribute, value)
 
 
-def iter_paginators(params: dict):
+def iter_paginators(params: dict) -> Generator[Paginator, None, None]:
     """Return a generator of pagination instructions."""
     for key, value in iter_namespace(params, 'page'):
         if key not in ['number', 'size', 'offset', 'limit', 'cursor']:
@@ -25,7 +26,7 @@ def iter_paginators(params: dict):
         yield Paginator('page[{}]'.format(key), key, value)
 
 
-def iter_includes(params: dict):
+def iter_includes(params: dict) -> Generator[Include, None, None]:
     """Return a generator of include instructions."""
     includes = params.get('include', '')
     includes = includes.split(',')
@@ -35,7 +36,7 @@ def iter_includes(params: dict):
         yield Include('include', include.split('.'))
 
 
-def iter_sorts(params: dict):
+def iter_sorts(params: dict) -> Generator[Sort, None, None]:
     """Return a generator of sort instructions."""
     sorts = params.get('sort', '')
     sorts = sorts.split(',')
@@ -52,7 +53,7 @@ def iter_sorts(params: dict):
         yield Sort('sort', relationships, attribute, direction)
 
 
-def iter_namespace(params: dict, namespace: str):
+def iter_namespace(params: dict, namespace: str) -> Generator[Any, None, None]:
     """Return a generator of namespaced instructions."""
     for key, value in params.items():
         if key.startswith('{}['.format(namespace)) and key.endswith(']'):

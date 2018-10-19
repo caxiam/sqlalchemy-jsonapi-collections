@@ -1,4 +1,16 @@
 from jsonapiquery.drivers import DriverBase
+from sqlalchemy import orm, or_
+
+import operator
+
+
+# Operators
+contains = lambda column, value: column.contains(value)
+notcontains = lambda column, value: ~contains(column, value)
+like = lambda column, value: column.ilike('%{}%'.format(value))
+notlike = lambda column, value: ~like(column, value)
+in_ = lambda column, value: column.in_(value)
+notin_ = lambda column, value: column.notin_(value)
 
 
 class DriverModelSQLAlchemy(DriverBase):
@@ -17,8 +29,33 @@ class Attribute:
         self.model = model
         self.attribute = getattr(self.model, self.attribute_name)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.attribute_name)
+
 
 class Column(Attribute):
+
+    VALUE_PARTITION = ','
+    STRATEGY_PARTITION = ':'
+    STRATEGIES = {
+        'eq': operator.eq,
+        '~eq': operator.ne,
+        'ne': operator.ne,
+        'gt': operator.gt,
+        '~gt': operator.le,
+        'gte': operator.ge,
+        '~gte': operator.lt,
+        'lt': operator.lt,
+        '~lt': operator.ge,
+        'lte': operator.le,
+        '~lte': operator.gt,
+        'like': contains,
+        '~like': notcontains,
+        'ilike': like,
+        '~ilike': notlike,
+        'in': in_,
+        '~in': notin_,
+    }
 
     @property
     def column(self):
@@ -68,9 +105,48 @@ class Column(Attribute):
             return False
         return True
 
+    def expression(self, column, value):
+        """Return a query expression."""
+        strategy, separator, value = value.partition(self.STRATEGY_PARTITION)
+        if separator == '':
+            strategy, value = 'eq', strategy
+
+        if strategy in self.STRATEGIES:
+            strategy_name = strategy
+            strategy = self.STRATEGIES[strategy]
+        else:
+            raise ValueError('Invalid query strategy specified.')
+
+        values = value.split(self.VALUE_PARTITION)
+        if strategy_name in ['in', '~in']:
+            return strategy(column, values)
+        elif len(values) == 1:
+            return strategy(column, values[0])
+
+        expressions = [strategy(column, value) for value in values]
+        return or_(*expressions)
+
 
 class Mapper(Attribute):
 
     @property
+    def is_relationship(self):
+        return isinstance(self.attribute, orm.attributes.InstrumentedAttribute)
+
+    @property
+    def can_joinedload(self):
+        return self.is_relationship
+
+    @property
+    def joinedload(self):
+        return self.attribute
+
+    @property
     def type(self):
         return self.attribute.property.mapper.class_
+
+    @property
+    def aliased_type(self):
+        if not hasattr(self, '_aliased_type'):
+            self._aliased_type = orm.aliased(self.type)
+        return self._aliased_type

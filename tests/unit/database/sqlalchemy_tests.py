@@ -3,8 +3,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
-from jsonapiquery.database.sqlalchemy import (
-    group_and_remove, include, QueryMixin)
+from jsonapiquery.database.sqlalchemy import QueryMixin
+from jsonapiquery.drivers.model.sqlalchemy import Mapper, Column as ColumnType
+from jsonapiquery.types import Filter, Include, Sort, Paginator
+from jsonapiquery.utils import QueryCounter
 from tests.sqlalchemy import *
 
 
@@ -20,6 +22,8 @@ class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
 
         self.session = sessionmaker(bind=self.engine, query_cls=BaseQuery)()
         self.session.begin_nested()
+
+        self.counter = QueryCounter(self.session)
 
         image_1 = Image()
         self.session.add(image_1)
@@ -44,6 +48,7 @@ class BaseDatabaseSQLAlchemyTests(BaseSQLAlchemyTestCase):
 
         student = Student(school_id=2, person_id=2)
         self.session.add(student)
+        self.session.commit()
 
 
 class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -51,111 +56,110 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_eq(self):
         """Test filtering a query with the `eq` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, 'eq', ['Fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'Fred')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
     def test_query_filter_strategy_negation(self):
         """Test filtering a query with a negated strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, '~eq', ['Fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'ne:Fred')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
     def test_query_filter_strategy_gt(self):
         """Test filtering a query with the `gt` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.age, 'gt', [5]).all()
+        filter_ = Filter('', [], ColumnType('age', Person), 'gt:5')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].age == 10)
 
     def test_query_filter_strategy_gte(self):
         """Test filtering a query with the `gte` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.age, 'gte', [5]).all()
+        filter_ = Filter('', [], ColumnType('age', Person), 'gte:5')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_strategy_lt(self):
         """Test filtering a query with the `lt` strategy."""
-        date = datetime.strptime('2015-01-01', "%Y-%m-%d").date()
-        models = self.session.query(
-            Person).apply_filter(Person.birth_date, 'lt', [date]).all()
+        filter_ = Filter(
+            '', [], ColumnType('birth_date', Person), 'lt:2015-01-01')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
 
     def test_query_filter_strategy_lte(self):
         """Test filtering a query with the `lte` strategy."""
-        date = datetime.strptime('2015-01-01', "%Y-%m-%d").date()
-        models = self.session.query(
-            Person).apply_filter(Person.birth_date, 'lte', [date]).all()
+        filter_ = Filter(
+            '', [], ColumnType('birth_date', Person), 'lte:2015-01-01')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_strategy_like(self):
         """Test filtering a query with the `like` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, 'like', ['Fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'like:red')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
     def test_query_filter_strategy_ilike(self):
         """Test filtering a query with the `ilike` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, 'ilike', ['fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'like:RED')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
     def test_query_filter_in_values(self):
         """Test filtering a query by the `in` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, 'in', ['Fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'in:Fred')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
     def test_query_filter_not_in_values(self):
         """Test filtering a query by the `~in` strategy."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, '~in', ['Fred']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), '~in:Fred')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
     def test_query_filter_multiple_values(self):
         """Test filtering a query by multiple values."""
-        models = self.session.query(
-            Person).apply_filter(Person.name, 'eq', ['Fred', 'Carl']).all()
+        filter_ = Filter('', [], ColumnType('name', Person), 'Fred,Carl')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_invalid_strategy(self):
         """Test filtering a query by an invalid strategy."""
+        filter_ = Filter('', [], ColumnType('name', Person), 'qq:Fred,Carl')
+
         try:
-            self.session.query(
-                Person).apply_filter(Person.name, 'qq', ['Fred']).all()
-            self.assertTrue(False)
+            self.session.query(Person).apply_filter(filter_).all()
         except ValueError:
             self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
-    def test_query_filter_multiple_joins(self):
+    def test_query_filter_joined(self):
         """Test filtering a query with multiple join conditions."""
-        models = self.session.query(Person).apply_filter(
-            School.name, 'eq', ['School'],
-            [Person.student, Student.school]).all()
+        filter_ = Filter(
+            '', [Mapper('student', Person), Mapper('school', Student)],
+            ColumnType('name', School), 'School')
+
+        models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
-
-    def test_query_filter_ambiguous_join_conditions(self):
-        """Test filtering a query under ambiguous join conditions."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
-        self.session.add(p)
-
-        model = self.session.query(Product).apply_filters([
-            (Category.name, 'eq', ['Category A'], [Product.primary_category]),
-            (Category.name, 'eq', ['Category B'], [Product.secondary_category])
-        ]).first()
-        self.assertTrue(isinstance(model, Product))
-        self.assertTrue(model.name == 'Tst')
 
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -163,52 +167,123 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_attribute_ascending(self):
         """Test sorting a query by an ascending column."""
-        models = self.session.query(Person).apply_sort(Person.name, '+').all()
+        sort = Sort('', [], ColumnType('name', Person), '+')
+
+        models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Carl')
         self.assertTrue(models[1].name == 'Fred')
 
     def test_query_sort_attribute_descending(self):
         """Test sorting a query by a descending column."""
-        models = self.session.query(Person).apply_sort(Person.name, '-').all()
+        sort = Sort('', [], ColumnType('name', Person), '-')
+
+        models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Fred')
         self.assertTrue(models[1].name == 'Carl')
 
     def test_query_sort_relationship_ascending(self):
         """Test sorting a query by an ascending relationship column."""
-        models = self.session.query(
-            Student).apply_sort(Person.name, '+', [Student.person]).all()
+        sort = Sort(
+            '', [Mapper('person', Student)], ColumnType('name', Person), '+')
+
+        models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Carl')
         self.assertTrue(models[1].person.name == 'Fred')
 
     def test_query_sort_relationship_descending(self):
         """Test sorting a query by a descending relationship column."""
-        models = self.session.query(
-            Student).apply_sort(Person.name, '-', [Student.person]).all()
+        sort = Sort(
+            '', [Mapper('person', Student)], ColumnType('name', Person), '-')
+
+        models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Fred')
         self.assertTrue(models[1].person.name == 'Carl')
 
     def test_query_sort_over_multiple_joins(self):
         """Test sorting a query with multiple join conditions."""
-        models = self.session.query(Person).apply_sort(
-            School.name, '+', [Person.student, Student.school]).all()
+        sort = Sort(
+            '', [Mapper('student', Person), Mapper('school', Student)],
+            ColumnType('name', School), '+')
+
+        models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Carl')
         self.assertTrue(models[1].name == 'Fred')
 
-    def test_query_sort_ambiguous_join_conditions(self):
-        """Test filtering a query under ambiguous join conditions."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        p = Product(primary_category_id=1, name='A')
-        self.session.add(p)
-        p = Product(primary_category_id=2, name='B')
-        self.session.add(p)
 
-        models = self.session.query(Product).apply_sort(
-            Category.name, '-', [Product.primary_category]).all()
-        self.assertTrue(models[0].name == 'B')
-        self.assertTrue(models[1].name == 'A')
+class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
+
+    def test_include_one_column(self):
+        """Test including a single relationship."""
+        include = Include('', [Mapper('student', Person)])
+
+        with self.counter as query_counter:
+            model = self.session.query(Person).first()
+            model.student
+            self.assertTrue(query_counter.count == 2)
+
+        with self.counter as query_counter:
+            model = self.session.query(Person).include(include).first()
+            model.student
+            self.assertTrue(query_counter.count == 1)
+
+    def test_include_multiple_columns(self):
+        """Test including multiple relationships."""
+        include = Include(
+            '', [Mapper('student', Person), Mapper('school', Student)])
+
+        with self.counter as query_counter:
+            model = self.session.query(Person).first()
+            model.student
+            model.student[0].school
+            self.assertTrue(query_counter.count == 3)
+        
+        with self.counter as query_counter:
+            model = self.session.query(Person).include(include).first()
+            model.student
+            model.student[0].school
+            self.assertTrue(query_counter.count == 1)
+
+    def test_include_self_referential_relationship(self):
+        """Test including a self-referential relationship."""
+        self.session.add(Category(name='Category A'))
+        self.session.add(Category(name='Category B', category_id=1))
+        self.session.add(Category(name='Category C', category_id=2))
+        self.session.commit()
+
+        include = Include(
+            '', [Mapper('category', Category), Mapper('categories', Category)])
+
+        with self.counter as query_counter:
+            model = self.session.query(
+                Category).filter(Category.id == 2).first()
+            model.category
+            model.category.categories
+            self.assertTrue(query_counter.count == 4)
+
+        with self.counter as query_counter:
+            model = self.session.query(
+                Category).filter(Category.id == 2).include(include).first()
+            model.category
+            model.category.categories
+            self.assertTrue(query_counter.count == 1)
+
+    def test_include_polymorphic_model(self):
+        """Test including polymorphic relationships."""
+        self.session.add(Rose(person_id=1, kind='rose'))
+        self.session.add(Sunflower(person_id=1, kind='sunflower'))
+        self.session.commit()
+
+        include = Include('', [Mapper('flowers', Person)])
+
+        with self.counter as query_counter:
+            model = self.session.query(Person).first()
+            model.flowers
+            self.assertTrue(query_counter.count == 3)
+
+        with self.counter as query_counter:
+            model = self.session.query(Person).include(include).first()
+            model.flowers
+            self.assertTrue(query_counter.count == 1)
 
 
 class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -216,196 +291,36 @@ class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_paginate_limit(self):
         """Test limiting a query."""
-        models = self.session.query(
-            Person).apply_paginators([('limit', 1)]).all()
+        paginator = Paginator('', 'limit', '1')
+
+        models = self.session.query(Person).apply_paginators([paginator]).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
 
     def test_query_paginate_offset(self):
         """Test offsetting a query."""
-        models = self.session.query(
-            Person).apply_paginators([('offset', 1)]).all()
+        paginator = Paginator('', 'offset', '1')
+
+        models = self.session.query(Person).apply_paginators([paginator]).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
     def test_query_paginate_number(self):
         """Test offsetting a query by page number."""
-        models = self.session.query(
-            Person).apply_paginators([('number', 2), ('limit', 1)]).all()
+        p1 = Paginator('', 'limit', '1')
+        p2 = Paginator('', 'number', '2')
+
+        models = self.session.query(Person).apply_paginators([p1, p2]).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Carl')
 
+    def test_query_paginate_number_invalid_value(self):
+        """Test offsetting a query by page number."""
+        p1 = Paginator('', 'limit', 'q')
 
-class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
-    """Test constructing an included query."""
-
-    def test_include_one_column(self):
-        """Test including a single relationship."""
-        models = self.session.query(Person).include([Person.student]).first()
-        self.assertTrue(isinstance(models[0], Person))
-        self.assertTrue(isinstance(models[1], Student))
-        self.assertTrue(models[1].person_id == 1)
-
-    def test_include_multiple_columns(self):
-        """Test including multiple relationships."""
-        models = self.session.query(Person).include([
-            Person.student, Student.school]).first()
-        self.assertTrue(isinstance(models[0], Person))
-        self.assertTrue(isinstance(models[1], Student))
-        self.assertTrue(isinstance(models[2], School))
-
-    def test_include_convergent_nested(self):
-        """Test including convergent nested columns."""
-        models = self.session.query(Student).include([
-            Student.person, Person.image, Student.school,
-            School.image]).first()
-        self.assertTrue(isinstance(models[0], Student))
-        self.assertTrue(isinstance(models[1], Person))
-        self.assertTrue(isinstance(models[2], Image))
-        self.assertTrue(isinstance(models[3], School))
-        self.assertTrue(isinstance(models[4], Image))
-
-    def test_include_self_referential_relationship(self):
-        """Test including a self-referential relationship."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        c = Category(name='Category C', category_id=2)
-        self.session.add(c)
-
-        models = self.session.query(Category).filter(Category.id == 2).include(
-            [Category.category, Category.categories]).all()
-        models = models[0]
-        self.assertTrue(len(models) == 3)
-
-        self.assertTrue(isinstance(models[0], Category))
-        self.assertTrue(models[0].id == 2)
-
-        self.assertTrue(isinstance(models[1], Category))
-        self.assertTrue(models[1].id == 1)
-
-        self.assertTrue(isinstance(models[2], Category))
-        self.assertTrue(models[2].id == 3)
-
-    def test_include_ambiguous_join_conditions(self):
-        """Test including a model when a join can be made multiple ways."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
-        self.session.add(p)
-
-        models = self.session.query(Product).include([
-            Product.primary_category, Product.secondary_category]).first()
-        self.assertTrue(isinstance(models[1], Category))
-        self.assertTrue(isinstance(models[2], Category))
-
-    def test_include_does_not_restrict_primary_output(self):
-        """Test including a relationship does not restrict primary output."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
-        self.session.add(p)
-
-        p = Product(name='Tst 2')
-        self.session.add(p)
-
-        models = self.session.query(Product).include(
-            [Product.primary_category]).all()
-        self.assertTrue(len(models) == 2)
-
-    def test_include_no_mappers(self):
-        """Test including an empty set of relationships."""
-        models = self.session.query(Person).include([]).first()
-        self.assertTrue(isinstance(models, Person))
-
-    def test_include_from_model(self):
-        """Test including from a model."""
-        a = Category(name='Category A')
-        self.session.add(a)
-
-        p = Product(primary_category_id=1, name='Test')
-        self.session.add(p)
-
-        items = include(
-            self.session, Product, [Category], [Product.primary_category], [1])
-        self.assertTrue(isinstance(items, list))
-        self.assertTrue(isinstance(items[0], list))
-        self.assertTrue(isinstance(items[0][0], Category))
-
-    def test_include_from_model_convergent_relationships(self):
-        """Test including convergent relationships."""
-        items = include(
-            self.session, Student, [Person, School, Image],
-            [Student.person, Person.image, Student.school, School.image], [1])
-        self.assertTrue(isinstance(items, list))
-        self.assertTrue(isinstance(items[0], list))
-        self.assertTrue(isinstance(items[0][0], Person))
-        self.assertTrue(isinstance(items[1][0], School))
-        self.assertTrue(isinstance(items[2][0], Image))
-        self.assertTrue(isinstance(items[2][1], Image))
-
-    def test_include_from_model_without_relationship(self):
-        """Test including from a model when no relationship exists."""
-        p = Product(name='Test')
-        self.session.add(p)
-
-        items = include(
-            self.session, Product, [Category], [Product.primary_category], [1])
-        self.assertTrue(isinstance(items, list))
-        self.assertTrue(isinstance(items[0], list))
-        self.assertTrue(items == [[]])
-
-        items = include(
-            self.session, Product, [Category, Category],
-            [Product.primary_category, Product.secondary_category], [1])
-        self.assertTrue(isinstance(items, list))
-        self.assertTrue(isinstance(items[0], list))
-        self.assertTrue(items == [[], []])
-
-    def test_include_polymorphic_model(self):
-        """Test including polymorphic relationships."""
-        rose = Rose(person_id=1, kind='rose')
-        self.session.add(rose)
-
-        sun = Sunflower(person_id=1, kind='sunflower')
-        self.session.add(sun)
-
-        items = include(
-            self.session, Person, [Flower], [Person.flowers], [1])
-        self.assertTrue(isinstance(items, list))
-        self.assertTrue(isinstance(items[0], list))
-
-        # Assert polymorphic subclasses are grouped together
-        self.assertTrue(isinstance(items[0][0], Rose))
-        self.assertTrue(isinstance(items[0][1], Sunflower))
-
-
-class UtilitySQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
-    """Test handling a query's output."""
-
-    def test_group_and_remove(self):
-        """Test group and remove utility function."""
-        a = Category(name='Category A')
-        self.session.add(a)
-        b = Category(name='Category B', category_id=1)
-        self.session.add(b)
-        p = Product(primary_category_id=1, secondary_category_id=2, name='Tst')
-        self.session.add(p)
-
-        p = Product(name='Tst 2')
-        self.session.add(p)
-
-        # Returns two products and one category.
-        items = self.session.query(Product).include(
-            [Product.primary_category]).all()
-        self.assertTrue(len(items) == 2)
-
-        output = group_and_remove(items, [Product, Category])
-        self.assertTrue(len(output) == 2)
-        self.assertTrue(len(output[0]) == 2)
-        self.assertTrue(len(output[1]) == 1)
+        try:
+            models = self.session.query(Person).apply_paginators([p1]).all()
+        except ValueError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
