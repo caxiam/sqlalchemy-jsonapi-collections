@@ -222,7 +222,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             self.assertTrue(query_counter.count == 2)
 
         with self.counter as query_counter:
-            model = self.session.query(Person).include(include).first()
+            model = self.session.query(Person).apply_include(include).first()
             model.student
             self.assertTrue(query_counter.count == 1)
 
@@ -238,7 +238,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             self.assertTrue(query_counter.count == 3)
         
         with self.counter as query_counter:
-            model = self.session.query(Person).include(include).first()
+            model = self.session.query(Person).apply_include(include).first()
             model.student
             model.student[0].school
             self.assertTrue(query_counter.count == 1)
@@ -262,7 +262,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
         with self.counter as query_counter:
             model = self.session.query(
-                Category).filter(Category.id == 2).include(include).first()
+                Category).filter(Category.id == 2).apply_include(include).first()
             model.category
             model.category.categories
             self.assertTrue(query_counter.count == 1)
@@ -281,7 +281,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             self.assertTrue(query_counter.count == 3)
 
         with self.counter as query_counter:
-            model = self.session.query(Person).include(include).first()
+            model = self.session.query(Person).apply_include(include).first()
             model.flowers
             self.assertTrue(query_counter.count == 1)
 

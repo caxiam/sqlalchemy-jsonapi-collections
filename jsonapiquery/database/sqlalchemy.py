@@ -65,7 +65,12 @@ class QueryMixin(BaseQueryMixin):
             pagination['offset'] = pagination['number'] * limit - limit
         return self.limit(pagination['limit']).offset(pagination['offset'])
 
-    def include(self, include):
+    def apply_includes(self, includes):
+        for include in includes:
+            self = self.apply_include(include)
+        return self
+
+    def apply_include(self, include):
         """Implicitly join a chain of mappers."""
         opts = None
         for relationship in include.relationships:
