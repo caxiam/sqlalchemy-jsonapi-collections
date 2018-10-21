@@ -52,7 +52,7 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
         relationship = Relationship('student', Person())
 
         assert isinstance(relationship.type, Student)
-        assert relationship.model_attribute == 'student'
+        assert relationship.super_attribute == 'student'
         assert isinstance(relationship.field, field.__class__)
 
     def test_attribute(self):
@@ -60,7 +60,7 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
         field = Person().declared_fields['kids_name']
         attribute = Attribute('kids_name', Person())
 
-        assert attribute.model_attribute == 'name'
+        assert attribute.super_attribute == 'name'
         assert isinstance(attribute.field, field.__class__)
 
     def test_attribute_deserialize(self):

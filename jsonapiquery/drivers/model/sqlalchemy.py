@@ -16,10 +16,10 @@ notin_ = lambda column, value: column.notin_(value)
 class DriverModelSQLAlchemy(DriverBase):
 
     def parse_attribute(self, item, model):
-        return Column(item.model_attribute, model)
+        return Column(item.super_attribute, model)
 
     def parse_relationship(self, item, model):
-        return Mapper(item.model_attribute, model)
+        return Mapper(item.super_attribute, model)
 
 
 class Attribute:

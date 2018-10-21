@@ -18,7 +18,7 @@ class Field:
         self.field = self.schema.declared_fields[self.field_name]
 
     @property
-    def model_attribute(self):
+    def super_attribute(self):
         return self.field.attribute or self.field_name
 
     def normalize_text(self, field_name):
