@@ -1,4 +1,5 @@
 from jsonapiquery.drivers import DriverBase
+from marshmallow_jsonapi import fields
 
 
 class DriverSchemaMarshmallow(DriverBase):
@@ -43,4 +44,6 @@ class Relationship(Field):
 
     @property
     def type(self):
+        if not isinstance(self.field, fields.Relationship):
+            raise TypeError
         return self.field.schema

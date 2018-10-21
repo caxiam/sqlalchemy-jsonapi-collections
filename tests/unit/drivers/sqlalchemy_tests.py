@@ -25,7 +25,7 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             Attribute('title', SchoolSchema()), 'test')
         new_type = self.driver.parse(old_type)
         
-        assert old_type.source == new_type.source
+        assert new_type.source == old_type
         assert old_type.relationships != new_type.relationships
         assert isinstance(new_type.relationships[0], Mapper)
         assert old_type.attribute != new_type.attribute
@@ -50,7 +50,7 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             Attribute('title', SchoolSchema()), '+')
         new_type = self.driver.parse(old_type)
 
-        assert old_type.source == new_type.source
+        assert new_type.source == old_type
         assert old_type.relationships != new_type.relationships
         assert isinstance(new_type.relationships[0], Mapper)
         assert old_type.attribute != new_type.attribute

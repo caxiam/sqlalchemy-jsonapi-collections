@@ -9,30 +9,39 @@ class DriverBase(metaclass=ABCMeta):
     def __repr__(self):
         return '{}(type={})'.format(self.__class__.__name__, self.obj)
 
-    def init_type(self, type, **init_kwargs):
-        """Initialize a new type.
+    def init_type(self, item_type, **init_kwargs):
+        """Initialize a new item_type.
 
-        :param type: Type of namedtuple.
+        :param item_type: Type of namedtuple.
         :param init_kwargs: Type keyword arguments.
         """
-        return type(**init_kwargs)
+        return item_type(**init_kwargs)
 
     def parse(self, item):
         """Return a new typed item instance."""
-        obj = self.obj
+        relationships, obj = self.parse_relationships(item, self.obj)
 
+        init_kwargs = item._asdict()
+        init_kwargs['source'] = item
+        init_kwargs['relationships'] = relationships
+        init_kwargs.update(self.parse_if_attribute(item, obj))
+
+        return self.init_type(type(item), **init_kwargs)
+
+    def parse_relationships(self, item, obj):
         relationships = []
         for relationship in item.relationships:
             relationship = self.parse_relationship(relationship, obj)
             relationships.append(relationship)
             obj = relationship.type
+        return relationships, obj
 
-        init_kwargs = item._asdict()
-        init_kwargs['relationships'] = relationships
+    def parse_if_attribute(self, item, obj):
+        init_kwargs = {}
         if hasattr(item, 'attribute'):
             attribute = self.parse_attribute(item.attribute, obj)
             init_kwargs['attribute'] = attribute
-        return self.init_type(type(item), **init_kwargs)
+        return init_kwargs
 
     @abstractmethod
     def parse_attribute(self, attribute, type):

@@ -4,15 +4,6 @@ from sqlalchemy import orm, or_
 import operator
 
 
-# Operators
-contains = lambda column, value: column.contains(value)
-notcontains = lambda column, value: ~contains(column, value)
-like = lambda column, value: column.ilike('%{}%'.format(value))
-notlike = lambda column, value: ~like(column, value)
-in_ = lambda column, value: column.in_(value)
-notin_ = lambda column, value: column.notin_(value)
-
-
 class DriverModelSQLAlchemy(DriverBase):
 
     def parse_attribute(self, item, model):
@@ -49,12 +40,12 @@ class Column(Attribute):
         '~lt': operator.ge,
         'lte': operator.le,
         '~lte': operator.gt,
-        'like': contains,
-        '~like': notcontains,
-        'ilike': like,
-        '~ilike': notlike,
-        'in': in_,
-        '~in': notin_,
+        'like': lambda column, value: column.contains(value),
+        '~like': lambda column, value: ~contains(column, value),
+        'ilike': lambda column, value: column.ilike('%{}%'.format(value)),
+        '~ilike': lambda column, value: ~like(column, value),
+        'in': lambda column, value: column.in_(value),
+        '~in': lambda column, value: column.notin_(value),
     }
 
     @property
@@ -143,6 +134,8 @@ class Mapper(Attribute):
 
     @property
     def type(self):
+        if not self.is_relationship:
+            raise TypeError
         return self.attribute.property.mapper.class_
 
     @property
