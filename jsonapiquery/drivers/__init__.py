@@ -9,8 +9,16 @@ class DriverBase(metaclass=ABCMeta):
     def __repr__(self):
         return '{}(type={})'.format(self.__class__.__name__, self.obj)
 
+    def init_type(self, type, **init_kwargs):
+        """Initialize a new type.
+
+        :param type: Type of namedtuple.
+        :param init_kwargs: Type keyword arguments.
+        """
+        return type(**init_kwargs)
+
     def parse(self, item):
-        """Return a new, typed item instance."""
+        """Return a new typed item instance."""
         obj = self.obj
 
         relationships = []
@@ -24,7 +32,7 @@ class DriverBase(metaclass=ABCMeta):
         if hasattr(item, 'attribute'):
             attribute = self.parse_attribute(item.attribute, obj)
             init_kwargs['attribute'] = attribute
-        return type(item)(**init_kwargs)
+        return self.init_type(type(item), **init_kwargs)
 
     @abstractmethod
     def parse_attribute(self, attribute, type):
