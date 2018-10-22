@@ -47,3 +47,9 @@ class Relationship(Field):
         if not isinstance(self.field, fields.Relationship):
             raise TypeError
         return self.field.schema
+
+    def serialize(self, models):
+        data, errors = self.type.dump(models, many=True)
+        if errors:
+            raise ValueError(errors)
+        return data.get('data', [])
