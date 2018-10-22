@@ -56,7 +56,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_eq(self):
         """Test filtering a query with the `eq` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'Fred')
+        filter_ = Filter('', [], ColumnType('name', Person), ('eq', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -64,7 +64,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_negation(self):
         """Test filtering a query with a negated strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'ne:Fred')
+        filter_ = Filter('', [], ColumnType('name', Person), ('ne', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -72,7 +72,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_gt(self):
         """Test filtering a query with the `gt` strategy."""
-        filter_ = Filter('', [], ColumnType('age', Person), 'gt:5')
+        filter_ = Filter('', [], ColumnType('age', Person), ('gt', ['5']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -80,7 +80,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_gte(self):
         """Test filtering a query with the `gte` strategy."""
-        filter_ = Filter('', [], ColumnType('age', Person), 'gte:5')
+        filter_ = Filter('', [], ColumnType('age', Person), ('gte', ['5']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
@@ -88,7 +88,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_filter_strategy_lt(self):
         """Test filtering a query with the `lt` strategy."""
         filter_ = Filter(
-            '', [], ColumnType('birth_date', Person), 'lt:2015-01-01')
+            '', [], ColumnType('birth_date', Person), ('lt', ['2015-01-01']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -96,14 +96,14 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_filter_strategy_lte(self):
         """Test filtering a query with the `lte` strategy."""
         filter_ = Filter(
-            '', [], ColumnType('birth_date', Person), 'lte:2015-01-01')
+            '', [], ColumnType('birth_date', Person), ('lte', ['2015-01-01']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_strategy_like(self):
         """Test filtering a query with the `like` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'like:red')
+        filter_ = Filter('', [], ColumnType('name', Person), ('like', ['red']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -111,7 +111,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_ilike(self):
         """Test filtering a query with the `ilike` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'like:RED')
+        filter_ = Filter('', [], ColumnType('name', Person), ('like', ['RED']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -119,7 +119,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_in_values(self):
         """Test filtering a query by the `in` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'in:Fred')
+        filter_ = Filter('', [], ColumnType('name', Person), ('in', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -127,7 +127,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_not_in_values(self):
         """Test filtering a query by the `~in` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), '~in:Fred')
+        filter_ = Filter('', [], ColumnType('name', Person), ('~in', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -135,14 +135,14 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_multiple_values(self):
         """Test filtering a query by multiple values."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'Fred,Carl')
+        filter_ = Filter('', [], ColumnType('name', Person), ('eq', ['Fred', 'Carl']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_invalid_strategy(self):
         """Test filtering a query by an invalid strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), 'qq:Fred,Carl')
+        filter_ = Filter('', [], ColumnType('name', Person), ('qq', ['Fred,Carl']))
 
         try:
             self.session.query(Person).apply_filter(filter_).all()
@@ -155,7 +155,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         """Test filtering a query with multiple join conditions."""
         filter_ = Filter(
             '', [Mapper('student', Person), Mapper('school', Student)],
-            ColumnType('name', School), 'School')
+            ColumnType('name', School), ('eq', ['School']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)

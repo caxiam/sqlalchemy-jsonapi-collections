@@ -24,7 +24,7 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
         assert isinstance(new_type.relationships[0], Relationship)
         assert old_type.attribute != new_type.attribute
         assert isinstance(new_type.attribute, Attribute)
-        assert old_type.value == new_type.value
+        assert new_type.value == ('eq', [old_type.value])
 
     def test_parse_include(self):
         """Test parse Include type."""
@@ -67,16 +67,16 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
         """Test Attribute value deserialization."""
         field = Attribute('name', Person())
         value = field.deserialize_value('Test')
-        assert value == 'Test'
+        assert value == ('eq', ['Test'])
 
         field = Attribute('age', Person())
         value = field.deserialize_value('10')
-        assert value == 10
+        assert value == ('eq', [10])
 
         field = Attribute('birth-date', Person())
         value = field.deserialize_value('2018-01-01')
-        assert value == date(2018, 1, 1)
+        assert value == ('eq', [date(2018, 1, 1)])
 
         field = Attribute('updated-at', Person())
-        value = field.deserialize_value('2018-01-01T00:00:00.000000')
-        assert value == datetime(2018, 1, 1, 0, 0, 0, 0)
+        value = field.deserialize_value('eq:2018-01-01T00:00:00.000000')
+        assert value == ('eq', [datetime(2018, 1, 1, 0, 0, 0, 0)])

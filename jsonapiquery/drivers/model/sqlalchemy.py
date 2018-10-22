@@ -98,17 +98,13 @@ class Column(Attribute):
 
     def expression(self, column, value):
         """Return a query expression."""
-        strategy, separator, value = value.partition(self.STRATEGY_PARTITION)
-        if separator == '':
-            strategy, value = 'eq', strategy
+        strategy_name, values = value
 
-        if strategy in self.STRATEGIES:
-            strategy_name = strategy
-            strategy = self.STRATEGIES[strategy]
+        if strategy_name in self.STRATEGIES:
+            strategy = self.STRATEGIES[strategy_name]
         else:
             raise ValueError('Invalid query strategy specified.')
 
-        values = value.split(self.VALUE_PARTITION)
         if strategy_name in ['in', '~in']:
             return strategy(column, values)
         elif len(values) == 1:

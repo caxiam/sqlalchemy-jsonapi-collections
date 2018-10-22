@@ -22,7 +22,7 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
             'filter[student.school.title]', [
                 Relationship('student', PersonSchema()),
                 Relationship('school', StudentSchema())],
-            Attribute('title', SchoolSchema()), 'test')
+            Attribute('title', SchoolSchema()), ('eq', ['test']))
         new_type = self.driver.parse(old_type)
         
         assert new_type.source == old_type
