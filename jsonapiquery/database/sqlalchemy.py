@@ -1,6 +1,7 @@
 """SQLAlchemy jsonapi-query adapter."""
-from sqlalchemy.orm import aliased, joinedload
+from jsonapiquery import errors
 from jsonapiquery.database import BaseQueryMixin
+from sqlalchemy.orm import aliased, joinedload
 
 
 class QueryMixin(BaseQueryMixin):
@@ -59,7 +60,11 @@ class QueryMixin(BaseQueryMixin):
             'offset': self.DEFAULT_OFFSET
         }
         for paginator in paginators:
-            pagination[paginator.strategy] = int(paginator.value)
+            try:
+                pagination[paginator.strategy] = int(paginator.value)
+            except ValueError:
+                message = 'Pagination values must be integers.'
+                raise errors.InvalidValue(message, paginator)
         if 'number' in pagination:
             limit = pagination['limit']
             pagination['offset'] = pagination['number'] * limit - limit
