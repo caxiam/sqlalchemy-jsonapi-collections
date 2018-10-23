@@ -1,77 +1,59 @@
+import functools
 import json
 
 
-ERRORS = {
-    'KEY_PARSE_ERROR': {'code': 1, 'message': 'Could not parse key.'}
-}
+class CollectErrors:
 
-
-class ErrorHandler:
-    """Error collection management object."""
-
-    def __init__(self, strict=False):
-        """Initialize ErrorHandler object.
-
-        :param strict (bool): If strict raise errors without collection.
-        """
+    def __init__(self, exc_type):
         self.errors = []
-        self.strict = strict
+        self.exc_type = exc_type
 
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
-        if not self.strict and isinstance(value, JSONAPIQueryError):
-            self.errors.append(value)
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type == self.exc_type:
+            self.errors.append(exc_value)
             return True
-
-    def __iter__(self):
-        return iter(self.errors)
-
-    def __len__(self):
-        return len(self.errors)
-
-    def __str__(self):
-        return json.dumps(dict(self))
-
-    @property
-    def __dict__(self):
-        return make_error_response(self.errors)
 
 
 class JSONAPIQueryError(Exception):
-    http_status_code = 400
-    error_map = ERRORS
+    http_status = 400
     namespace = 120000
 
-    def __init__(self, key, source, meta={}):
-        self.key = key
-        self.source = source
-        self.meta = meta
+    def __init__(self, detail, item, code):
+        self.detail = detail
+        self.item = item
+        self.code = code
+
+    def __iter__(self):
+        yield from self.message.items()
 
     def __repr__(self):
-        msg = '{}(code={}, message={})'
-        return msg.format(self.__class__.__name__, self.code, self.message)
-
-    @property
-    def __dict__(self):
-        result = {
-            'code': self.code + self.namespace,
-            'detail': self.message,
-            'source': {'parameter': self.source},
-            'status': self.http_status_code,
-        }
-        if self.meta:
-            result['meta'] = self.meta
-        return result
-
-    @property
-    def code(self):
-        return self.error_map[key]['code']
+        return json.dumps(self.message)
 
     @property
     def message(self):
-        return self.error_map[key]['message']
+        return {
+            'code': self.namespace + self.code,
+            'detail': self.detail,
+            'source': {'parameter': self.source},
+            'status': self.http_status,
+        }
+
+    @property
+    def source(self):
+        source = self.item.source
+        while True:
+            if isinstance(source, str):
+                break
+            source = source.source
+        return source
+
+
+InvalidPath = functools.partial(JSONAPIQueryError, code=1)
+InvalidFieldType = functools.partial(JSONAPIQueryError, code=2)
+InvalidValue = functools.partial(JSONAPIQueryError, code=3)
 
 
 def make_error_response(errors: list) -> dict:

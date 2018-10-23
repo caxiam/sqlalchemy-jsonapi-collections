@@ -49,7 +49,7 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
     def test_relationship(self):
         """Test Relationship type."""
         field = Person().declared_fields['student']
-        relationship = Relationship('student', Person())
+        relationship = Relationship('student', Person(), None)
 
         assert isinstance(relationship.type, Student)
         assert relationship.super_attribute == 'student'
@@ -58,25 +58,25 @@ class DriverSchemaMarshmallowTestCase(BaseMarshmallowJSONAPITestCase):
     def test_attribute(self):
         """Test Attribute type."""
         field = Person().declared_fields['kids_name']
-        attribute = Attribute('kids_name', Person())
+        attribute = Attribute('kids_name', Person(), None)
 
         assert attribute.super_attribute == 'name'
         assert isinstance(attribute.field, field.__class__)
 
     def test_attribute_deserialize(self):
         """Test Attribute value deserialization."""
-        field = Attribute('name', Person())
+        field = Attribute('name', Person(), None)
         value = field.deserialize_value('Test')
         assert value == ('eq', ['Test'])
 
-        field = Attribute('age', Person())
+        field = Attribute('age', Person(), None)
         value = field.deserialize_value('10')
         assert value == ('eq', [10])
 
-        field = Attribute('birth-date', Person())
+        field = Attribute('birth-date', Person(), None)
         value = field.deserialize_value('2018-01-01')
         assert value == ('eq', [date(2018, 1, 1)])
 
-        field = Attribute('updated-at', Person())
+        field = Attribute('updated-at', Person(), None)
         value = field.deserialize_value('eq:2018-01-01T00:00:00.000000')
         assert value == ('eq', [datetime(2018, 1, 1, 0, 0, 0, 0)])

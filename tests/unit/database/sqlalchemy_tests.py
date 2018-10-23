@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Query, sessionmaker
 
+from jsonapiquery import errors
 from jsonapiquery.database.sqlalchemy import QueryMixin
 from jsonapiquery.drivers.model.sqlalchemy import Mapper, Column as ColumnType
 from jsonapiquery.types import Filter, Include, Sort, Paginator
@@ -56,7 +57,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_eq(self):
         """Test filtering a query with the `eq` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('eq', ['Fred']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('eq', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -64,7 +65,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_negation(self):
         """Test filtering a query with a negated strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('ne', ['Fred']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('ne', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -72,7 +73,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_gt(self):
         """Test filtering a query with the `gt` strategy."""
-        filter_ = Filter('', [], ColumnType('age', Person), ('gt', ['5']))
+        filter_ = Filter('', [], ColumnType('age', Person, None), ('gt', ['5']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -80,7 +81,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_gte(self):
         """Test filtering a query with the `gte` strategy."""
-        filter_ = Filter('', [], ColumnType('age', Person), ('gte', ['5']))
+        filter_ = Filter('', [], ColumnType('age', Person, None), ('gte', ['5']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
@@ -88,7 +89,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_filter_strategy_lt(self):
         """Test filtering a query with the `lt` strategy."""
         filter_ = Filter(
-            '', [], ColumnType('birth_date', Person), ('lt', ['2015-01-01']))
+            '', [], ColumnType('birth_date', Person, None), ('lt', ['2015-01-01']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -96,14 +97,14 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_filter_strategy_lte(self):
         """Test filtering a query with the `lte` strategy."""
         filter_ = Filter(
-            '', [], ColumnType('birth_date', Person), ('lte', ['2015-01-01']))
+            '', [], ColumnType('birth_date', Person, None), ('lte', ['2015-01-01']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_strategy_like(self):
         """Test filtering a query with the `like` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('like', ['red']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('like', ['red']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -111,7 +112,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_strategy_ilike(self):
         """Test filtering a query with the `ilike` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('like', ['RED']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('like', ['RED']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -119,7 +120,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_in_values(self):
         """Test filtering a query by the `in` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('in', ['Fred']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('in', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -127,7 +128,7 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_not_in_values(self):
         """Test filtering a query by the `~in` strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('~in', ['Fred']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('~in', ['Fred']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -135,18 +136,18 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_multiple_values(self):
         """Test filtering a query by multiple values."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('eq', ['Fred', 'Carl']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('eq', ['Fred', 'Carl']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 2)
 
     def test_query_filter_invalid_strategy(self):
         """Test filtering a query by an invalid strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person), ('qq', ['Fred,Carl']))
+        filter_ = Filter('', [], ColumnType('name', Person, None), ('qq', ['Fred,Carl']))
 
         try:
             self.session.query(Person).apply_filter(filter_).all()
-        except ValueError:
+        except errors.JSONAPIQueryError:
             self.assertTrue(True)
         else:
             self.assertTrue(False)
@@ -154,8 +155,8 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_filter_joined(self):
         """Test filtering a query with multiple join conditions."""
         filter_ = Filter(
-            '', [Mapper('student', Person), Mapper('school', Student)],
-            ColumnType('name', School), ('eq', ['School']))
+            '', [Mapper('student', Person, None), Mapper('school', Student, None)],
+            ColumnType('name', School, None), ('eq', ['School']))
 
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
@@ -167,7 +168,7 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_attribute_ascending(self):
         """Test sorting a query by an ascending column."""
-        sort = Sort('', [], ColumnType('name', Person), '+')
+        sort = Sort('', [], ColumnType('name', Person, None), '+')
 
         models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Carl')
@@ -175,7 +176,7 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_attribute_descending(self):
         """Test sorting a query by a descending column."""
-        sort = Sort('', [], ColumnType('name', Person), '-')
+        sort = Sort('', [], ColumnType('name', Person, None), '-')
 
         models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Fred')
@@ -184,7 +185,7 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_sort_relationship_ascending(self):
         """Test sorting a query by an ascending relationship column."""
         sort = Sort(
-            '', [Mapper('person', Student)], ColumnType('name', Person), '+')
+            '', [Mapper('person', Student, None)], ColumnType('name', Person, None), '+')
 
         models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Carl')
@@ -193,7 +194,7 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_sort_relationship_descending(self):
         """Test sorting a query by a descending relationship column."""
         sort = Sort(
-            '', [Mapper('person', Student)], ColumnType('name', Person), '-')
+            '', [Mapper('person', Student, None)], ColumnType('name', Person, None), '-')
 
         models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Fred')
@@ -202,8 +203,8 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_query_sort_over_multiple_joins(self):
         """Test sorting a query with multiple join conditions."""
         sort = Sort(
-            '', [Mapper('student', Person), Mapper('school', Student)],
-            ColumnType('name', School), '+')
+            '', [Mapper('student', Person, None), Mapper('school', Student, None)],
+            ColumnType('name', School, None), '+')
 
         models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Carl')
@@ -214,7 +215,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_include_one_column(self):
         """Test including a single relationship."""
-        include = Include('', [Mapper('student', Person)])
+        include = Include('', [Mapper('student', Person, None)])
 
         with self.counter as query_counter:
             model = self.session.query(Person).first()
@@ -229,7 +230,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     def test_include_multiple_columns(self):
         """Test including multiple relationships."""
         include = Include(
-            '', [Mapper('student', Person), Mapper('school', Student)])
+            '', [Mapper('student', Person, None), Mapper('school', Student, None)])
 
         with self.counter as query_counter:
             model = self.session.query(Person).first()
@@ -251,7 +252,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.session.commit()
 
         include = Include(
-            '', [Mapper('category', Category), Mapper('categories', Category)])
+            '', [Mapper('category', Category, None), Mapper('categories', Category, None)])
 
         with self.counter as query_counter:
             model = self.session.query(
@@ -273,7 +274,7 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         self.session.add(Sunflower(person_id=1, kind='sunflower'))
         self.session.commit()
 
-        include = Include('', [Mapper('flowers', Person)])
+        include = Include('', [Mapper('flowers', Person, None)])
 
         with self.counter as query_counter:
             model = self.session.query(Person).first()

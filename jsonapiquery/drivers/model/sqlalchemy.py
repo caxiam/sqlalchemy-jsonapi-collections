@@ -1,3 +1,4 @@
+from jsonapiquery import errors
 from jsonapiquery.drivers import DriverBase
 from sqlalchemy import orm, or_
 
@@ -6,22 +7,26 @@ import operator
 
 class DriverModelSQLAlchemy(DriverBase):
 
-    def parse_attribute(self, item, model):
-        return Column(item.super_attribute, model)
+    def parse_attribute(self, field, model, item):
+        return Column(field.super_attribute, model, item)
 
-    def parse_relationship(self, item, model):
-        return Mapper(item.super_attribute, model)
+    def parse_relationship(self, field, model, item):
+        return Mapper(field.super_attribute, model, item)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(model={self.obj})'
 
 
 class Attribute:
 
-    def __init__(self, attribute_name, model):
+    def __init__(self, attribute_name, model, item):
         self.attribute_name = attribute_name
         self.model = model
+        self.item = item
         self.attribute = getattr(self.model, self.attribute_name)
 
     def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self.attribute_name)
+        return f'{self.model}.{self.attribute_name}'
 
 
 class Column(Attribute):
@@ -103,7 +108,7 @@ class Column(Attribute):
         if strategy_name in self.STRATEGIES:
             strategy = self.STRATEGIES[strategy_name]
         else:
-            raise ValueError('Invalid query strategy specified.')
+            raise errors.InvalidValue('Unknown strategy specified.', self.item)
 
         if strategy_name in ['in', '~in']:
             return strategy(column, values)
@@ -131,7 +136,7 @@ class Mapper(Attribute):
     @property
     def type(self):
         if not self.is_relationship:
-            raise TypeError
+            raise TypeError('Not an "InstrumentedAttribute".')
         return self.attribute.property.mapper.class_
 
     @property

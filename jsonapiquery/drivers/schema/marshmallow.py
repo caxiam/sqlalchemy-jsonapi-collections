@@ -1,4 +1,6 @@
+from jsonapiquery import errors
 from jsonapiquery.drivers import DriverBase
+from marshmallow import ValidationError
 from marshmallow_jsonapi import fields
 
 
@@ -11,19 +13,29 @@ class DriverSchemaMarshmallow(DriverBase):
             init_kwargs['value'] = attribute.deserialize_value(item.value)
         return init_kwargs
 
-    def parse_attribute(self, field_name, schema):
-        return Attribute(field_name, schema)
+    def parse_attribute(self, field_name, schema, item):
+        return Attribute(field_name, schema, item)
 
-    def parse_relationship(self, field_name, schema):
-        return Relationship(field_name, schema)
+    def parse_relationship(self, field_name, schema, item):
+        return Relationship(field_name, schema, item)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(schema={self.obj})'
 
 
 class Field:
 
-    def __init__(self, field_name, schema):
+    def __init__(self, field_name, schema, item):
+        self.request_name = field_name
         self.field_name = self.normalize_text(field_name)
+        self.item = item
         self.schema = schema
-        self.field = self.schema.declared_fields[self.field_name]
+
+        try:
+            self.field = self.schema.declared_fields[self.field_name]
+        except KeyError:
+            message = f'Invalid field specified: {self.request_name}'
+            raise errors.InvalidPath(message, self.item)
 
     @property
     def super_attribute(self):
@@ -32,6 +44,9 @@ class Field:
     def normalize_text(self, field_name):
         """Dedasherize field names."""
         return field_name.replace('-', '_')
+
+    def __repr__(self):
+        return f'{self.schema}.{self.field_name}'
 
 
 class Attribute(Field):
@@ -58,16 +73,23 @@ class Attribute(Field):
     def _deserialize_value(self, value):
         if value == '':
             return None
-        return self.field._deserialize(value, None, None)
+
+        try:
+            return self.field._deserialize(value, None, None)
+        except ValidationError:
+            message = 'Invalid value for field type.'
+            raise errors.InvalidValue(message, self.item)
 
 
 class Relationship(Field):
 
     @property
     def type(self):
-        if not isinstance(self.field, fields.Relationship):
-            raise TypeError
-        return self.field.schema
+        try:
+            return self.field.schema
+        except AttributeError:
+            message = f'Field "{self.request_name}" is not a relationship.'
+            raise errors.InvalidFieldType(message, self.item)
 
     def serialize(self, models):
         data, errors = self.type.dump(models, many=True)

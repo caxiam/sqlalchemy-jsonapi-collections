@@ -20,9 +20,9 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         """Test parse Filter type."""
         old_type = Filter(
             'filter[student.school.title]', [
-                Relationship('student', PersonSchema()),
-                Relationship('school', StudentSchema())],
-            Attribute('title', SchoolSchema()), ('eq', ['test']))
+                Relationship('student', PersonSchema(), None),
+                Relationship('school', StudentSchema(), None)],
+            Attribute('title', SchoolSchema(), None), ('eq', ['test']))
         new_type = self.driver.parse(old_type)
         
         assert new_type.source == old_type
@@ -35,8 +35,8 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
     def test_parse_include(self):
         """Test parse Include type."""
         old_type = Include('include', [
-            Relationship('student', PersonSchema()),
-            Relationship('school', StudentSchema())])
+            Relationship('student', PersonSchema(), None),
+            Relationship('school', StudentSchema(), None)])
         new_type = self.driver.parse(old_type)
 
         assert old_type.relationships != new_type.relationships
@@ -45,9 +45,9 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
     def test_parse_sort(self):
         """Test parse Sort type."""
         old_type = Sort('sort', [
-            Relationship('student', PersonSchema()),
-            Relationship('school', StudentSchema())],
-            Attribute('title', SchoolSchema()), '+')
+            Relationship('student', PersonSchema(), None),
+            Relationship('school', StudentSchema(), None)],
+            Attribute('title', SchoolSchema(), None), '+')
         new_type = self.driver.parse(old_type)
 
         assert new_type.source == old_type
@@ -58,13 +58,13 @@ class DriverModelSQLAlchemyTestCase(BaseSQLAlchemyTestCase):
         assert old_type.direction == new_type.direction
 
     def test_mapper(self):
-        mapper = Mapper('student', Person)
+        mapper = Mapper('student', Person, None)
 
         assert mapper.attribute is Person.student
         assert mapper.type == Student
 
     def test_column(self):
-        column = Column('image_id', Person)
+        column = Column('image_id', Person, None)
 
         assert column.is_enum is False
         assert column.is_foreign_key is True

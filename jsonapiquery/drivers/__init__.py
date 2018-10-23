@@ -7,7 +7,7 @@ class DriverBase(metaclass=ABCMeta):
         self.obj = obj
 
     def __repr__(self):
-        return '{}(type={})'.format(self.__class__.__name__, self.obj)
+        return f'{self.__class__.__name__}(type={self.obj})'
 
     def init_type(self, item_type, **init_kwargs):
         """Initialize a new item_type.
@@ -31,7 +31,7 @@ class DriverBase(metaclass=ABCMeta):
     def parse_relationships(self, item, obj):
         relationships = []
         for relationship in item.relationships:
-            relationship = self.parse_relationship(relationship, obj)
+            relationship = self.parse_relationship(relationship, obj, item)
             relationships.append(relationship)
             obj = relationship.type
         return relationships, obj
@@ -39,16 +39,16 @@ class DriverBase(metaclass=ABCMeta):
     def parse_if_attribute(self, item, obj):
         init_kwargs = {}
         if hasattr(item, 'attribute'):
-            attribute = self.parse_attribute(item.attribute, obj)
+            attribute = self.parse_attribute(item.attribute, obj, item)
             init_kwargs['attribute'] = attribute
         return init_kwargs
 
     @abstractmethod
-    def parse_attribute(self, attribute, type):
+    def parse_attribute(self, attribute, type, item):
         return None
 
     @abstractmethod
-    def parse_relationship(self, relationship, type):
+    def parse_relationship(self, relationship, type, item):
         return None
 
 
