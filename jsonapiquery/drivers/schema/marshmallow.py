@@ -20,7 +20,7 @@ class DriverSchemaMarshmallow(DriverBase):
         return Relationship(field_name, schema, item)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(schema={self.obj})'
+        return '{}(schema={})'.format(self.__class__.__name__, self.obj)
 
 
 class Field:
@@ -34,7 +34,7 @@ class Field:
         try:
             self.field = self.schema.declared_fields[self.field_name]
         except KeyError:
-            message = f'Invalid field specified: {self.request_name}'
+            message = 'Invalid field specified: {}.'.format(self.request_name)
             raise errors.InvalidPath(message, self.item)
 
     @property
@@ -46,7 +46,7 @@ class Field:
         return field_name.replace('-', '_')
 
     def __repr__(self):
-        return f'{self.schema}.{self.field_name}'
+        return '{}.{}'.format(self.schema, self.field_name)
 
 
 class Attribute(Field):
@@ -88,7 +88,7 @@ class Relationship(Field):
         try:
             return self.field.schema
         except AttributeError:
-            message = f'Field "{self.request_name}" is not a relationship.'
+            message = 'Field "{}" is not a relationship.'.format(self.request_name)
             raise errors.InvalidFieldType(message, self.item)
 
     def serialize(self, models):

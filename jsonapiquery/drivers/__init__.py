@@ -7,7 +7,7 @@ class DriverBase(metaclass=ABCMeta):
         self.obj = obj
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(type={self.obj})'
+        return '{}(type={})'.format(self.__class__.__name__, self.obj)
 
     def init_type(self, item_type, **init_kwargs):
         """Initialize a new item_type.

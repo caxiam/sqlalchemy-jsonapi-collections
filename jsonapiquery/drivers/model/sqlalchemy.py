@@ -14,7 +14,7 @@ class DriverModelSQLAlchemy(DriverBase):
         return Mapper(field.super_attribute, model, item)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(model={self.obj})'
+        return '{}(model={})'.format(self.__class__.__name__, self.obj)
 
 
 class Attribute:
@@ -26,7 +26,7 @@ class Attribute:
         self.attribute = getattr(self.model, self.attribute_name)
 
     def __repr__(self):
-        return f'{self.model}.{self.attribute_name}'
+        return '{}.{}'.format(self.model, self.attribute_name)
 
 
 class Column(Attribute):
