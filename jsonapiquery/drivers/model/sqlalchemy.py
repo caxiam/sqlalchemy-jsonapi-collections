@@ -136,7 +136,8 @@ class Mapper(Attribute):
     @property
     def type(self):
         if not self.is_relationship:
-            raise TypeError('Not an "InstrumentedAttribute".')
+            message = 'Invalid relationship specified.'
+            raise errors.InvalidFieldType(message, self.item)
         return self.attribute.property.mapper.class_
 
     @property
