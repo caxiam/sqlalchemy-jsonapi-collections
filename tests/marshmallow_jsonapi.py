@@ -45,5 +45,16 @@ class School(Schema):
         type_ = 'schools'
 
 
+class Category(Schema):
+    id = fields.Integer()
+    name = fields.String()
+    category = fields.Relationship(schema='Category')
+    categories = fields.Relationship(schema='Category')
+
+    class Meta:
+        inflect = dasherize
+        type_ = 'categories'
+
+
 class BaseMarshmallowJSONAPITestCase(UnitTestCase):
     pass

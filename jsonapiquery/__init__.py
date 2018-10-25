@@ -56,6 +56,9 @@ def serialize_models(mapper, relationship, models):
 
 def serialize_relationship(mapper, relationship, model):
     models = getattr(model, mapper.attribute_name)
+    if models is None:
+        return [], []
+
     if not isinstance(models, list):
         models = [models]
     return relationship.serialize(models), models
