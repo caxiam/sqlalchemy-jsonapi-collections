@@ -1,6 +1,7 @@
 """Test database interactions."""
 from datetime import datetime
 
+from nose.tools import assert_raises
 from sqlalchemy.orm import Query, sessionmaker
 
 from jsonapiquery import errors
@@ -143,14 +144,11 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_filter_invalid_strategy(self):
         """Test filtering a query by an invalid strategy."""
-        filter_ = Filter('', [], ColumnType('name', Person, None), ('qq', ['Fred,Carl']))
-
-        try:
-            self.session.query(Person).apply_filter(filter_).all()
-        except errors.JSONAPIQueryError:
-            self.assertTrue(True)
-        else:
-            self.assertTrue(False)
+        filter_ = Filter(
+            '', [], ColumnType('name', Person, None), ('qq', ['Fred,Carl']))
+        query = self.session.query(Person)
+        assert_raises(
+            errors.JSONAPIQueryError, query.apply_filter, filter_=filter_)
 
     def test_query_filter_joined(self):
         """Test filtering a query with multiple join conditions."""
@@ -161,6 +159,23 @@ class FilterSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
         models = self.session.query(Person).apply_filter(filter_).all()
         self.assertTrue(len(models) == 1)
         self.assertTrue(models[0].name == 'Fred')
+
+    def test_query_filter_invalid_join(self):
+        """Test filtering a query with an invalid join condition."""
+        filter_ = Filter('', [
+            Mapper('name', Person, None)], ColumnType('name', School, None),
+            ('eq', ['School']))
+        query = self.session.query(Person)
+        assert_raises(
+            errors.JSONAPIQueryError, query.apply_filters, filters=[filter_])
+
+    def test_query_filter_invalid_column(self):
+        """Test filtering a query against an invalid column."""
+        filter_ = Filter(
+            '', [], ColumnType('student', Person, None), ('eq', ['School']))
+        query = self.session.query(Person)
+        assert_raises(
+            errors.JSONAPIQueryError, query.apply_filters, filters=[filter_])
 
 
 class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -184,8 +199,9 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_relationship_ascending(self):
         """Test sorting a query by an ascending relationship column."""
-        sort = Sort(
-            '', [Mapper('person', Student, None)], ColumnType('name', Person, None), '+')
+        sort = Sort('', [
+            Mapper('person', Student, None)], ColumnType('name', Person, None),
+            '+')
 
         models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Carl')
@@ -193,8 +209,9 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_relationship_descending(self):
         """Test sorting a query by a descending relationship column."""
-        sort = Sort(
-            '', [Mapper('person', Student, None)], ColumnType('name', Person, None), '-')
+        sort = Sort('', [
+            Mapper('person', Student, None)], ColumnType('name', Person, None),
+            '-')
 
         models = self.session.query(Student).apply_sort(sort).all()
         self.assertTrue(models[0].person.name == 'Fred')
@@ -202,13 +219,22 @@ class SortSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_sort_over_multiple_joins(self):
         """Test sorting a query with multiple join conditions."""
-        sort = Sort(
-            '', [Mapper('student', Person, None), Mapper('school', Student, None)],
+        sort = Sort('', [
+            Mapper('student', Person, None), Mapper('school', Student, None)],
             ColumnType('name', School, None), '+')
 
         models = self.session.query(Person).apply_sort(sort).all()
         self.assertTrue(models[0].name == 'Carl')
         self.assertTrue(models[1].name == 'Fred')
+
+    def test_query_sort_invalid_join(self):
+        """Test sorting a query with an invalid join condition."""
+        sort = Sort('', [
+            Mapper('name', Person, None)], ColumnType('name', School, None),
+            '+')
+        query = self.session.query(Person)
+        assert_raises(
+            errors.JSONAPIQueryError, query.apply_sorts, sorts=[sort])
 
 
 class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
@@ -286,6 +312,22 @@ class IncludeSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
             model.flowers
             self.assertTrue(query_counter.count == 1)
 
+    def test_include_python_property(self):
+        """Test including a python property."""
+        include = Include('', [Mapper('school', Person, None)])
+
+        # Assert base case.
+        with self.counter as query_counter:
+            model = self.session.query(Person).first()
+            model.student[0].school
+            self.assertTrue(query_counter.count == 3)
+
+        # Assert it does nothing but does not raise an error.
+        with self.counter as query_counter:
+            model = self.session.query(Person).apply_include(include).first()
+            model.school
+            self.assertTrue(query_counter.count == 3)
+
 
 class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
     """Test query pagination related methods."""
@@ -317,11 +359,8 @@ class PaginateSQLAlchemyTestCase(BaseDatabaseSQLAlchemyTests):
 
     def test_query_paginate_number_invalid_value(self):
         """Test offsetting a query by page number."""
-        p1 = Paginator('', 'limit', 'q')
-
-        try:
-            models = self.session.query(Person).apply_paginators([p1]).all()
-        except ValueError:
-            self.assertTrue(True)
-        else:
-            self.assertTrue(False)
+        query = self.session.query(Person)
+        paginator = Paginator('', 'limit', 'q')
+        assert_raises(
+            errors.JSONAPIQueryError, query.apply_paginators,
+            paginators=[paginator])

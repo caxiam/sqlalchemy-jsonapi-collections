@@ -18,15 +18,7 @@ class QueryMixin(BaseQueryMixin):
 
     def apply_filter(self, filter_):
         """Return a query object filtered by a column, value pair."""
-        column = filter_.attribute.attribute
-        mapper = None
-        for mapper in filter_.relationships:
-            self = self.outerjoin(mapper.aliased_type, mapper.attribute)
-
-        if mapper:
-            column_name = column.property.class_attribute.key
-            column = getattr(mapper.aliased_type, column_name)
-
+        self, column = self.recurse_to_column(filter_)
         expressions = filter_.attribute.expression(column, filter_.value)
         return self.filter(expressions)
 
@@ -38,14 +30,7 @@ class QueryMixin(BaseQueryMixin):
 
     def apply_sort(self, sort):
         """Return a query object sorted by a column."""
-        column = sort.attribute.attribute
-        mapper = None
-        for mapper in sort.relationships:
-            self = self.outerjoin(mapper.aliased_type, mapper.attribute)
-
-        if mapper:
-            column_name = column.property.class_attribute.key
-            column = getattr(mapper.aliased_type, column_name)
+        self, column = self.recurse_to_column(sort)
         if sort.direction == '-':
             column = column.desc()
         return self.order_by(column)
@@ -63,8 +48,7 @@ class QueryMixin(BaseQueryMixin):
             try:
                 pagination[paginator.strategy] = int(paginator.value)
             except ValueError:
-                message = 'Pagination values must be integers.'
-                raise errors.InvalidValue(message, paginator)
+                raise errors.InvalidPaginationValue(item=paginator)
         if 'number' in pagination:
             limit = pagination['limit']
             pagination['offset'] = pagination['number'] * limit - limit
@@ -78,13 +62,21 @@ class QueryMixin(BaseQueryMixin):
     def apply_include(self, include):
         """Implicitly join a chain of mappers."""
         opts = None
-        for relationship in include.relationships:
-            if not relationship.can_joinedload:
+        for mapper in include.relationships:
+            if not mapper.can_join:
                 break
             if opts is None:
-                opts = joinedload(relationship.joinedload)
+                opts = joinedload(mapper.condition)
             else:
-                opts = opts.joinedload(relationship.joinedload)
+                opts = opts.joinedload(mapper.condition)
         if opts:
             self = self.options(opts)
         return self
+
+    def recurse_to_column(self, item):
+        mapper = None
+        for mapper in item.relationships:
+            self = self.outerjoin(mapper.aliased_type, mapper.condition)
+
+        column = item.attribute.aliased_column(mapper)
+        return self, column

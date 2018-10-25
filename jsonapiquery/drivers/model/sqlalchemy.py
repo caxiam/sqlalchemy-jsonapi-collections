@@ -55,7 +55,10 @@ class Column(Attribute):
 
     @property
     def column(self):
-        return self.attribute.property.columns[0]
+        try:
+            return self.attribute.property.columns[0]
+        except AttributeError:
+            raise Exception('here')
 
     @property
     def default_strategy(self):
@@ -88,6 +91,14 @@ class Column(Attribute):
     @property
     def python_type(self):
         return self.type.python_type
+
+    def aliased_column(self, mapper):
+        column = self.attribute
+        if not hasattr(column.property, 'columns'):
+            raise errors.InvalidQuery(item=self.item)
+        if mapper:
+            column = getattr(mapper.aliased_type, self.attribute_name)
+        return column
 
     def validate_value(self, value):
         if self.is_enum and value not in self.enums:
@@ -122,26 +133,31 @@ class Column(Attribute):
 class Mapper(Attribute):
 
     @property
-    def is_relationship(self):
-        return isinstance(self.attribute, orm.attributes.InstrumentedAttribute)
+    def can_join(self):
+        """Return "True" if the mapper can be joined to a query."""
+        try:
+            self.type
+        except errors.JSONAPIQueryError:
+            return False
+        else:
+            return True
 
     @property
-    def can_joinedload(self):
-        return self.is_relationship
-
-    @property
-    def joinedload(self):
+    def condition(self):
+        """Return the mapper's join condition."""
         return self.attribute
 
     @property
     def type(self):
-        if not self.is_relationship:
-            message = 'Invalid relationship specified.'
-            raise errors.InvalidFieldType(message, self.item)
-        return self.attribute.property.mapper.class_
+        """Return the table of the mapper."""
+        try:
+            return self.attribute.property.mapper.class_
+        except AttributeError:
+            raise errors.InvalidQuery(item=self.item)
 
     @property
     def aliased_type(self):
+        """Return the aliased table of the mapper."""
         if not hasattr(self, '_aliased_type'):
             self._aliased_type = orm.aliased(self.type)
         return self._aliased_type

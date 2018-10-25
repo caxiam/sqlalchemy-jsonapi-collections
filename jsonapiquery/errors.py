@@ -18,13 +18,13 @@ class CollectErrors:
 
 
 class JSONAPIQueryError(Exception):
-    http_status = 400
     namespace = 120000
 
-    def __init__(self, detail, item, code):
+    def __init__(self, detail, item, code, meta=None):
         self.detail = detail
         self.item = item
         self.code = code
+        self.meta = meta or {}
 
     def __iter__(self):
         yield from self.message.items()
@@ -38,7 +38,6 @@ class JSONAPIQueryError(Exception):
             'code': self.namespace + self.code,
             'detail': self.detail,
             'source': {'parameter': self.source},
-            'status': self.http_status,
         }
 
     @property
@@ -54,6 +53,10 @@ class JSONAPIQueryError(Exception):
 InvalidPath = functools.partial(JSONAPIQueryError, code=1)
 InvalidFieldType = functools.partial(JSONAPIQueryError, code=2)
 InvalidValue = functools.partial(JSONAPIQueryError, code=3)
+InvalidQuery = functools.partial(
+    JSONAPIQueryError, detail='Invalid query specified.', code=4)
+InvalidPaginationValue = InvalidQuery = functools.partial(
+    JSONAPIQueryError, detail='Pagination values must be integers.', code=5)
 
 
 def make_error_response(errors: list) -> dict:

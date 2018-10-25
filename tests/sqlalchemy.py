@@ -63,6 +63,11 @@ class Person(Base):
 
     image = relationship('Image', backref='person')
 
+    @property
+    def school(self):
+        """Return the school this person attends."""
+        return self.student[0].school
+
 
 class Student(Base):
     """Mock 'through' table for `School` and `Person` models."""
