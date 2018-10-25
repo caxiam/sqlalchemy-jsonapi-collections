@@ -55,10 +55,7 @@ class Column(Attribute):
 
     @property
     def column(self):
-        try:
-            return self.attribute.property.columns[0]
-        except AttributeError:
-            raise Exception('here')
+        return self.attribute.property.columns[0]
 
     @property
     def default_strategy(self):
