@@ -1,7 +1,7 @@
 # circle.yml
 machine:
   python:
-    version: 3.5.1
+    version: 3.6.4
   services:
     - docker
 
