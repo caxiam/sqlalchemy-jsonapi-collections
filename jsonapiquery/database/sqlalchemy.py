@@ -56,7 +56,7 @@ class QueryMixin(BaseQueryMixin):
         if max_size is not None and pagination['limit'] > max_size:
             pagination['limit'] = max_size
         if max_depth is not None and pagination['offset'] > max_depth:
-            pagination['depth'] = max_depth
+            pagination['offset'] = max_depth
 
         return self.limit(pagination['limit']).offset(pagination['offset'])
 
