@@ -35,7 +35,7 @@ class QueryMixin(BaseQueryMixin):
             column = column.desc()
         return self.order_by(column)
 
-    def apply_paginators(self, paginators, max_size=None, max_depth=None):
+    def apply_paginators(self, paginators, max_size=None):
         """Return a query object paginated by a limit and offset value.
 
         :param paginators: List of stategy and value arguments.
@@ -46,18 +46,20 @@ class QueryMixin(BaseQueryMixin):
         }
         for paginator in paginators:
             try:
-                pagination[paginator.strategy] = int(paginator.value)
+                value = int(paginator.value)
+
+                # Raise if the maximum page size was exceeded.
+                if max_size is not None and \
+                        paginator.strategy in ['limit', 'number'] and \
+                        value > max_size:
+                    raise ValueError('Maximum query size exceeded.')
+
+                pagination[paginator.strategy] = value
             except ValueError:
                 raise errors.InvalidPaginationValue(item=paginator)
         if 'number' in pagination:
             limit = pagination['limit']
             pagination['offset'] = pagination['number'] * limit - limit
-
-        if max_size is not None and pagination['limit'] > max_size:
-            pagination['limit'] = max_size
-        if max_depth is not None and pagination['offset'] > max_depth:
-            pagination['offset'] = max_depth
-
         return self.limit(pagination['limit']).offset(pagination['offset'])
 
     def apply_includes(self, includes):
