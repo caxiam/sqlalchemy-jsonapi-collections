@@ -27,10 +27,10 @@ def include_query(query, params, drivers):
     return query.apply_includes(includes), includes
 
 
-def paginate_query(query, params):
+def paginate_query(query, params, max_size=None, max_depth=None):
     paginators = url.iter_paginators(params)
     paginators = list(paginators)
-    return query.apply_paginators(paginators), paginators
+    return query.apply_paginators(paginators, max_size, max_depth), paginators
 
 
 def serialize_includes(includes, models):
