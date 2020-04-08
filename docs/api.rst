@@ -4,43 +4,34 @@
 API Reference
 *************
 
-.. module:: jsonapi_collections
+.. module:: jsonapiquery
 
-Collection
+JSONAPIQuery
 ==========
 
-.. autoclass:: jsonapi_collections.Resource
+.. autoclass:: jsonapiquery.JSONAPIQuery
     :inherited-members:
-    :private-members:
 
-Drivers
-=======
+Model Drivers
+=============
 
-.. automodule:: jsonapi_collections.drivers
+.. automodule:: jsonapiquery.drivers.model
     :members:
-    :private-members:
 
-Filter
-======
+View Drivers
+============
 
-.. autoclass:: jsonapi_collections.filter.FilterParameter
-    :inherited-members:
-
-Sort
-====
-
-.. autoclass:: jsonapi_collections.sort.SortValue
-    :inherited-members:
-
-Include
-=======
-
-.. autoclass:: jsonapi_collections.include.IncludeValue
-    :inherited-members:
-
-Errors
-======
-
-.. automodule:: jsonapi_collections.errors
+.. automodule:: jsonapiquery.drivers.schema
     :members:
-    :private-members:
+
+SQLAlchemy
+==========
+
+.. automodule:: jsonapiquery.database.sqlalchemy
+    :members:
+
+URL Parsing
+===========
+
+.. automodule:: jsonapiquery.url
+    :members:

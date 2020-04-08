@@ -1,8 +1,7 @@
 .. _why:
 
 
-Why sqlalchemy-jsonapi-collections?
+Why jsonapi-query?
 ===================================
 
-It provides a simple and effective wrapper for handling parameterized query filters.
-
+Who knows?

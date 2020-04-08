@@ -1,56 +1,177 @@
 .. _quick_start:
 
+***********
 Quick Start
-===========
+***********
 
-====================
-Managing Collections
-====================
+Setup
+=====
 
-To manage a query collection, instantiate a `Collection` object with the `model` and `parameters` arguments specified.
+**Creating a session factory:**
 
-::
-
-    from jsonapi_collections import Collection
-
-    params = {'sort': 'attr_1,attr_2', 'filter[attr_1]': 'test'}
-    c = Collection(my_model, params)
-
-You can optionally specify `driver` and `schema` arguments.  The driver acts as an intermediary between properity method calls.  The driver bindings supply a simple interface for the filter, sort, and include classes while also providing developers with the ability to use their own schema implementations.
-
-With your collection instantiated, we can now create query filters and sorts.
-
-**Filtering**
-
-To filter we call the `filter_query` method.
+Using SQLAlchemy as our example, import the "Query" class from SQLAlchemy and the "QueryMixin" class from the jsonapiquery database module.  Create a "BaseClass" and use it within the session factory "sessionmaker" function.
 
 ::
 
-    query = c.filter_query(query)
+    from jsonapiquery.database.sqlalchemy import QueryMixin
+    from sqlalchemy.orm import Query, sessionmaker
 
-This will return a permutated query object or raise a `JSONAPIError`.
 
-**Sorting**
+    class BaseQuery(QueryMixin, Query):
+        pass
 
-To sort we call the `sort_query` method.
 
-::
+    session_factory = sessionmaker(bind=engine, query_cls=BaseQuery)
+    session = session_factory()
 
-    query = c.sort_query(query)
+**Initializing JSONAPIQuery:**
 
-This will return a permutated query object or raise a `JSONAPIError`.
-
-================
-Creating Drivers
-================
-
-Drivers are a crucial part of the `jsonapi_collections` ecosystem.  To create your own driver for a custom schema implementation you need to complete the following:
-
-First, you must create a class the inherits from the `BaseDriver`.
-Second, you must override the unimplemented methods provided by the `BaseDriver`.
-
-Once you have a driver, you can pass a reference to the object in the `Collection` initialization process.  If the driver requires the use of a proprietary schema, then you need to pass that schema into the `Collection` object.
+To use the JSONAPIQuery class, you must first define a subclass of it with the "model_driver" and "view_driver" attributes defined as well as the "make_errors", "serialize_included" abstractmethods.  With your newly created orchestration subclass, initialize the class with the requested query parameters, the model class to query from, and the view class to parse the request arguments with.
 
 ::
 
-    c = Collection(my_model, params, MyCustomDriver, my_optional_schema)
+    from jsonapiquery import JSONAPIQuery
+    from jsonapiquery.drivers.model import SQLAlchemyDriver
+    from jsonapiquery.drivers.schema import MarshmallowDriver
+
+
+    class MyJSONAPIQuery(JSONAPIQuery):
+        model_driver = SQLAlchemyDriver
+        view_driver = MarshmallowDriver
+
+        def make_errors(self, errors):
+            return MyExceptionClass(errors)
+
+        def serialize_included(self, schema, models):
+            return schema.dump(models, many=True).data['data']
+
+
+    jsonapiquery = MyJSONAPIQuery(query_parameters, PersonModel, PersonView)
+
+It should be noted that the orchestration object is entirely optional.  You do not have to use the drivers, the database mixin, or the URL parsing module.  Everything within this library is optional.
+
+Quick Handling
+==============
+
+For quick JSONAPI query handling, the "make_query" method can be used to automatically handle parameter errors.  The "make_errors" method is used to raise the generated errors and the "serialize_included" method is used to serialized the included rows.
+
+"make_query" accepts two parameters: an ORM query object and a dictionary of query options.
+
+::
+
+    options = {
+        "can_compound": True,
+        "can_filter": False,
+        "can_paginate": False,
+        "can_sort": True
+    }
+    jsonapiquery = JSONAPIQuery({}, model, view)
+    query, total, selects, schemas = jsonapiquery.make_query(query, options)
+
+The outputs can be used to construct a response object.
+
+::
+
+    # base_url = 'http://site.com/api/v1/endpoint'
+    # total = 1000
+    # selects = [ModelB]
+    # schemas = [SchemaB]
+
+    models = group_and_remove(query.all(), selects + [self.model])
+    """Fetch the models and group them by their model type."""
+    response = {'data': self.view.dump(models.pop(), many=True).data['data']}
+    """Dump the primary model type to the "data" node."""
+    response = self.make_included_response(response, models, schemas)
+    """The remaining models are dumped to the "included" node."""
+    response = self.make_paginated_response(response, base_url, total)
+
+For more granular control, the documentation below describes the component parts of the "make_query" method.
+
+Filtering
+=========
+
+The "filter" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
+
+::
+
+    jsonapiquery = JSONAPIQuery({'filter[age]': 'lt:10'}, model, view)
+    query, errors = jsonapiquery.filter(query)
+
+Sorting
+=======
+
+The "sort" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
+
+::
+
+    jsonapiquery = JSONAPIQuery({'sort': 'last-name,first-name,-age'}, model, view)
+    query, errors = jsonapiquery.sort(query)
+
+Including
+=========
+
+The "include" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
+
+Additionally, the "include" method returns a set of models and schemas.  These models and schemas are used to serailize the included relationships.
+
+::
+
+    jsonapiquery = JSONAPIQuery({'include': 'student.school,parents'}, model, view)
+    query, models, schemas, errors = jsonapiquery.include(query)
+
+Construction of the document can be done using the "make_included_response" method.  The method accepts three arguments: the response dictionary, the models to serialize and the schemas to serialize them with.
+
+::
+
+    models = [[<ModelA1>, <ModelA2>], [<ModelB1>]]
+    schemas = [<SchemaA()>, <SchemaB()>]
+    response = jsonapiquery.make_included_response({}, models, schemas)
+    """
+    The "included" list will contain each other the models
+    serialized by the appropriate schema.
+
+    response = {
+        'included': [
+            {'id': '1', 'type': 'teachers'},
+            {'id': '2', 'type': 'teachers'},
+            {'id': '1', 'type': 'students'}
+        ]
+    }
+    """
+
+Paginating
+==========
+
+The "paginate" method accepts an ORM query object as its first parameter and optionally allows an errors list to be passed to it.  If errors are raised during execution, they will be added to the provided errors list and returned.
+
+Additionally, the "paginate" method returns a total value.  The total value is used to populate the "meta" object.
+
+::
+
+    jsonapiquery = JSONAPIQuery({"page[limit]": 1, "page[offset]": 2}, model, view)
+    query, total, errors = jsonapiquery.paginate(query)
+
+Construction of the document can be done using the "make_paginated_response" method.  The method accepts three arguments: the response dictionary, the base request URL, and the row count.
+
+::
+
+    base_url = "http://site.com/api/v1/endpoint"
+    total = 1000
+    response = jsonapiquery.make_paginated_response({"data": []}, base_url, total)
+    """
+    The "links" object and "meta" object have been added to the
+    provided response object.  In a machine generated result, the
+    individual URLs will be encoded.
+
+    response = {
+        "links": {
+            "first": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=0",
+            "last": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=999",
+            "next": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=3",
+            "prev": "http://site.com/api/v1/endpoint?page[limit]=1&page[offset]=1",
+            "self": "http://site.com/api/v1/endpoint",
+        },
+        "meta": {"total": 1000},
+        "data": []
+    }
+    """

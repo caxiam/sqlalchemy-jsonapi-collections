@@ -2,3 +2,7 @@
 *.pyc
 env/
 docs/_build
+__pycache__/
+.python-version
+
+sqlalchemy.db

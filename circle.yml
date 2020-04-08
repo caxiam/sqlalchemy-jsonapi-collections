@@ -1,7 +1,7 @@
 # circle.yml
 machine:
   python:
-    version: 2.7.3
+    version: 3.6.7
   services:
     - docker
 
@@ -9,6 +9,6 @@ test:
   pre:
      - pip install coveralls
   override:
-     - nosetests tests --with-coverage --cover-package=jsonapi_collections
+     - nosetests tests --with-coverage --cover-package=jsonapiquery
   post:
      - coveralls

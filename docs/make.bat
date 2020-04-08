@@ -128,9 +128,9 @@ if "%1" == "qthelp" (
 	echo.
 	echo.Build finished; now you can run "qcollectiongenerator" with the ^
 .qhcp project file in %BUILDDIR%/qthelp, like this:
-	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\sqlalchemy-jsonapi-collections.qhcp
+	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\jsonapiquery.qhcp
 	echo.To view the help file:
-	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\sqlalchemy-jsonapi-collections.ghc
+	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\jsonapiquery.ghc
 	goto end
 )
 
