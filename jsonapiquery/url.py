@@ -20,9 +20,10 @@ def iter_filters_only(
     only: List[str]
 ) -> Generator[Filter, None, None]:
     """Return a generator of restricted filter instructions."""
-    for key, value in iter_namespace(params, 'filter'):
-        if key in only:
-            yield parse_filter(key, value)
+    for key in only:
+        filter_key = 'filter[{}]'.format(key)
+        if filter_key in params:
+            yield parse_filter(key, params.get(filter_key))
 
 
 def parse_filter(key: str, value: str) -> Filter:
