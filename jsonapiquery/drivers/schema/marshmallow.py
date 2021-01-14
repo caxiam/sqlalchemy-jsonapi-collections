@@ -53,7 +53,7 @@ class Attribute(Field):
     DEFAULT_STRATEGY_TYPE = 'eq'
     STRATEGY_TYPES = [
         'eq', '~eq', 'ne', 'gt', '~gt', 'gte', '~gte', 'lt', '~lt', 'lte',
-        '~lte', 'like', '~like', 'ilike', '~ilike', 'in', '~in']
+        '~lte', 'like', '~like', 'ilike', '~ilike', 'in', '~in', 'range']
     STRATEGY_PARTITION = ':'
     VALUE_PARTITION = ','
 

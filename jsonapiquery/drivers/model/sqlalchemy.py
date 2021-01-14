@@ -1,6 +1,6 @@
 from jsonapiquery import errors
 from jsonapiquery.drivers import DriverBase
-from sqlalchemy import orm, or_
+from sqlalchemy import orm, and_, or_
 
 import operator
 
@@ -51,6 +51,8 @@ class Column(Attribute):
         '~ilike': lambda column, value: ~like(column, value),
         'in': lambda column, value: column.in_(value),
         '~in': lambda column, value: column.notin_(value),
+        'range': lambda column, value: and_(
+            column >= value[0], column <= value[1])
     }
 
     @property
@@ -113,12 +115,13 @@ class Column(Attribute):
         """Return a query expression."""
         strategy_name, values = value
 
-        if strategy_name in self.STRATEGIES:
-            strategy = self.STRATEGIES[strategy_name]
-        else:
+        if strategy_name not in self.STRATEGIES:
             raise errors.InvalidValue('Unknown strategy specified.', self.item)
+        elif strategy_name == 'range' and len(values) != 2:
+            raise errors.InvalidValue('Requires two arguments.', self.item)
 
-        if strategy_name in ['in', '~in']:
+        strategy = self.STRATEGIES[strategy_name]
+        if strategy_name in ['in', '~in', 'range']:
             return strategy(column, values)
         elif len(values) == 1:
             return strategy(column, values[0])
