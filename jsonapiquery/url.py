@@ -29,7 +29,7 @@ def iter_filters_only(
 def parse_filter(key: str, value: str) -> Filter:
     relationships = key.split('.')
     attribute = relationships.pop()
-    yield Filter('filter[{}]'.format(key), relationships, attribute, value)
+    return Filter('filter[{}]'.format(key), relationships, attribute, value)
 
 
 def iter_paginators(params: dict) -> Generator[Paginator, None, None]:

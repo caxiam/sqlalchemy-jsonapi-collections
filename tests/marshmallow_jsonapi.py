@@ -12,7 +12,7 @@ def dasherize(text):
 class Person(Schema):
     id = fields.Integer()
     name = fields.String()
-    kids_name = fields.String(attribute='name')
+    kids_name = fields.String(attribute='kid_name')
     age = fields.Integer()
     birth_date = fields.Date()
     updated_at = fields.DateTime()
