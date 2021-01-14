@@ -1,5 +1,5 @@
 from jsonapiquery.types import FieldSet, Filter, Include, Sort, Paginator
-from typing import Any, Generator
+from typing import Any, Generator, List
 
 
 def iter_fieldsets(params: dict) -> Generator[FieldSet, None, None]:
@@ -11,11 +11,24 @@ def iter_fieldsets(params: dict) -> Generator[FieldSet, None, None]:
 def iter_filters(params: dict) -> Generator[Filter, None, None]:
     """Return a generator of filter instructions."""
     for key, value in iter_namespace(params, 'filter'):
-        if key == '':
-            continue
-        relationships = key.split('.')
-        attribute = relationships.pop()
-        yield Filter('filter[{}]'.format(key), relationships, attribute, value)
+        if key != '':
+            yield parse_filter(key, value)
+
+
+def iter_filters_only(
+    params: dict,
+    only: List[str]
+) -> Generator[Filter, None, None]:
+    """Return a generator of restricted filter instructions."""
+    for key, value in iter_namespace(params, 'filter'):
+        if key in only:
+            yield parse_filter(key, value)
+
+
+def parse_filter(key: str, value: str) -> Filter:
+    relationships = key.split('.')
+    attribute = relationships.pop()
+    yield Filter('filter[{}]'.format(key), relationships, attribute, value)
 
 
 def iter_paginators(params: dict) -> Generator[Paginator, None, None]:
